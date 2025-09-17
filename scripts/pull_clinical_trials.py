@@ -68,7 +68,7 @@ def update_last_refresh():
 
 '''
 Returns results for one search term
-(str, str, str) -> List[JsonDocument]
+(str, str, str) -> list[dict]
 Params:
 * `search_type`: Either "conditions" or "interventions". Controls what type of results are returned.
 * `term`: Search term. 
