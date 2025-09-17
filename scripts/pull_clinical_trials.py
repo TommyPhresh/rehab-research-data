@@ -110,3 +110,47 @@ def fetch_data(search_type, term, last_refresh):
             break
 
     return all_results
+
+'''
+Appends new search results to JSONL file (raw data) defined for clinicaltrials.
+list[dict] -> ()
+Params:
+* `results`: List of JSON documents, each JSON document is a study
+'''
+def save_raw_data(results):
+    with open(RAW_DATA_PATH, 'a') as file:
+        for study in results:
+            json.dump(study, file)
+            file.write('\n')
+    print(f"Saved {len(results)} new studies.")
+
+'''
+Appends results of searches for each term in SEARCH_TERMS in one list.
+Dumps results list into raw data JSONL file.
+() -> ()
+'''
+def main():
+    last_refresh = get_last_refresh()
+    all_results = []
+    print("Beginning searches...")
+    for term in SEARCH_TERMS["conditions"]:
+        results = fetch_data("conditions", term, last_refresh)
+        all_results.extend(results)
+    print("Finished searching conditions...")
+    
+    for term in SEARCH_TERMS["interventions"]:
+        results = fetch_data("interventions", term, last_refresh)
+        all_results.extend(results)
+
+    print("Finished searching interventions...")
+    print(f"All searches returned {len(all_results} total results.")
+    if all_results:
+        save_raw_data(all_results)
+        update_last_refresh()
+
+    else:
+        print("No new studies found since last refresh.")
+
+if __name__ == "__main__":
+    main()
+        
