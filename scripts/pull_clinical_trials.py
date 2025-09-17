@@ -73,6 +73,8 @@ Params:
 * `search_type`: Either "conditions" or "interventions". Controls what type of results are returned.
 * `term`: Search term. 
 * `last_refresh`: YYYY-MM-DD date representing last ping to API.
+Return
+* List of JSON document. Each JSON document is a study.
 '''
 def fetch_data(search_type, term, last_refresh):
     params = {
