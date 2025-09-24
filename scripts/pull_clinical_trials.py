@@ -1,5 +1,15 @@
-# This file efficiently handles incremental pulls from clinicaltrials.gov
-# Uses a constant list of terms to pull only relevant and updated/new data.
+'''
+This file efficiently handles incremental pulls from clinicaltrials.gov
+Uses a constant list of terms to pull only relevant and updated/new data.
+'''
+
+import sys, os
+# The path to packages on the C: drive
+c_path = 'C:\\Users\\ThomasRich\\AppData\\Local\\Packages\\PythonSoftwareFoundation.python.3.13_qbz5n2kfra8p0\\localcache\\local-packages\\Python313\\site-packages'
+
+# Add the path to the Python system path
+if c_path not in sys.path:
+    sys.path.append(c_path)
 
 import requests, json, pandas as pd
 from datetime import datetime
@@ -56,14 +66,17 @@ def get_last_refresh():
         with open(LAST_PULL_DATE_FILE, 'r') as file:
             return file.read().strip()
     except FileNotFoundError:
-            return "1900-01-01"
+        return "1900-01-01"
+    except Exception as e:
+        print(f"Error: {e}")
+        return "1900-01-01"
 
 '''
 Updates the timestamp of last successful refresh
 () -> ()
 '''
 def update_last_refresh():
-    with open(LAST_PULL_DATE_FILE, 'r') as file:
+    with open(LAST_PULL_DATE_FILE, 'w') as file:
         file.write(datetime.now().strftime("%Y-%m-%d"))
 
 '''
@@ -82,7 +95,7 @@ def fetch_data(search_type, term, last_refresh):
         "query.locs": "United States",
         "filter.overallStatus": "RECRUITING|NOT_YET_RECRUITING|ACTIVE_NOT_RECRUITING|ENROLLING_BY_INVITATION",
         "pageSize": PAGE_SIZE,
-        "filter.lastRefreshPostDate": f"GE{last_refresh"
+        "filter.lastRefreshPostDate": f"{last_refresh}"
         }
     if search_type == "conditions":
         params["query.cond"] = term
@@ -143,7 +156,7 @@ def main():
         all_results.extend(results)
 
     print("Finished searching interventions...")
-    print(f"All searches returned {len(all_results} total results.")
+    print(f"All searches returned {len(all_results)} total results.")
     if all_results:
         save_raw_data(all_results)
         update_last_refresh()
