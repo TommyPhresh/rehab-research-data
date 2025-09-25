@@ -4,13 +4,12 @@ It uses a Mock object s.t. we can test without actually creating/deleting
 files. 
 '''
 
-import unittest
-from unittest.mock import patch, mock_open
+import unittest, os, sys, json
+from unittest.mock import patch, mock_open, Mock
 from datetime import datetime
-import os
-import sys
 
-from scripts.pull_clinical_trials import get_last_refresh, update_last_refresh, fetch_data, save_raw_data, LAST_PULL_DATE_FILE
+from scripts.pull_clinical_trials import main, get_last_refresh, update_last_refresh, fetch_data, save_raw_data, LAST_PULL_DATE_FILE, API_URL, PAGE_SIZE, SEARCH_TERMS, RAW_DATA_PATH
+from tests.mock_data_clinical_trials import MOCK_API_RESPONSE_SINGLE_PAGE, MOCK_API_RESPONSE_MULTI_PAGE_1, MOCK_API_RESPONSE_MULTI_PAGE_2
 
 # The path to packages on the C: drive
 requests_path = 'C:\\Users\\ThomasRich\\AppData\\Local\\Packages\\PythonSoftwareFoundation.python.3.13_qbz5n2kfra8p0\\localcache\\local-packages\\Python313\\site-packages'
@@ -64,8 +63,158 @@ class TestRefreshFunctions(unittest.TestCase):
         date = get_last_refresh()
         self.assertEqual(date, "1900-01-01")
 
+class TestFetchData(unittest.TestCase):
 
-if __name__ == "__main__GIT_SSH_COMMAND='ssh -i ~/.ssh/id_rsa_personal' git push origin main":
+    '''
+    `test_get_one_page_happy` ensures `fetch_page` can correctly handle a 
+    successful API one-page response.
+    '''
+    @patch('requests.get')
+    def test_get_one_page_happy(self, mock_get): 
+        # Configure mock file to simulate successful API response
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = MOCK_API_RESPONSE_SINGLE_PAGE
+
+        # Fake it til you make it
+        mock_get.return_value = mock_response
+        studies = fetch_data('conditions', 'rehabilitation', '1900-01-01')
+        
+        # Check assertions
+        mock_get.assert_called_once_with(
+            API_URL, 
+            params={
+                'format': 'json',
+                'query.locs': 'United States',
+                'filter.overallStatus': 'RECRUITING|NOT_YET_RECRUITING|ACTIVE_NOT_RECRUITING|ENROLLING_BY_INVITATION',
+                'pageSize': PAGE_SIZE,
+                'filter.lastRefreshPostDate': '1900-01-01',
+                'query.cond': 'rehabilitation'
+                }
+            )
+        self.assertEqual(len(studies), 1)
+        self.assertEqual(studies[0]['protocolSection']['sponsorCollaboratorsModule']['leadSponsor']['name'], 'Acme Pharmaceuticals')
+        self.assertIsInstance(studies, list)
+        self.assertIsInstance(studies[0], dict)
+
+    '''
+    `test_get_multi_page_happy` ensures `fetch_page` can correctly handle a 
+    successful API multi-page response.
+    '''
+    @patch('requests.get')
+    def test_get_multi_page_happy(self, mock_get):
+        # Configure mock file to simulate successful API response
+        mock_response1 = Mock()
+        mock_response1.status_code = 200
+        mock_response1.json.return_value = MOCK_API_RESPONSE_MULTI_PAGE_1
+        mock_response2 = Mock()
+        mock_response2.status_code = 200
+        mock_response2.json.return_value = MOCK_API_RESPONSE_MULTI_PAGE_2
+
+        # Fake it til you make it 
+        mock_get.side_effect = [mock_response1, mock_response2]
+        studies = fetch_data('conditions', 'imaginary condition', '1900-01-01')
+
+        # Check assertions
+        self.assertEqual(mock_get.call_count, 2)
+        self.assertEqual(len(studies), 2)
+        fake_ids = [study['protocolSection']['identificationModule']['nctId'] for study in studies]
+        self.assertIn('NCT00000002', fake_ids)
+        self.assertIn('NCT00000003', fake_ids)
+
+    '''
+    `test_fetch_page_error` ensures `fetch_page` can correctly handle an unsuccessful API response.
+    '''
+    @patch('requests.get')
+    def test_fetch_page_error(self, mock_get):
+        # Configure mock file to simulate unsuccessful API response
+        mock_response = Mock()
+        mock_response.status_code = 500
+        mock_response.text = "Internal Server Error"
+
+        # Fake that hoe
+        mock_get.return_value = mock_response
+        with patch('builtins.print') as mock_print:
+            studies = fetch_data('conditions', 'brain tumors', '1900-01-01')
+
+        # Check assertions
+        mock_get.assert_called_once()
+        self.assertEqual(studies, [])
+        mock_print.assert_called_with('Error: Internal Server Error')
+
+class TestSaveRawData(unittest.TestCase):
+    '''
+    Ensures `save_raw_data` correctly writes JSON data to the designated save file.
+    '''
+    @patch('scripts.pull_clinical_trials.open', new_callable=mock_open)
+    def test_save_raw_data_happy(self, mock_file):
+        # Configure mock files
+        fake_data = [{'NCTId':'NCT001', 'title':'Number One'},
+                     {'NCTId':'NCT002', 'title':'Number Two'}]
+        save_raw_data(fake_data)
+        
+        # Check assertions
+        mock_file.assert_called_with(RAW_DATA_PATH, 'w')
+        expected_content_list = [json.dumps(item) for item in fake_data]
+        expected_content = '\n'.join(expected_content_list) + '\n'
+        all_args = mock_file.return_value.write.call_args_list
+        actual_content = ''.join(arg[0][0] for arg in all_args)
+        self.assertEqual(actual_content, expected_content)
+
+
+class TestMain(unittest.TestCase):
+    '''
+    Tests that the `main()` function of `pull_clinical_trials` script performs a full data pull correctly.
+    '''
+    @patch('scripts.pull_clinical_trials.update_last_refresh')
+    @patch('scripts.pull_clinical_trials.save_raw_data')
+    @patch('scripts.pull_clinical_trials.fetch_data')
+    @patch('scripts.pull_clinical_trials.get_last_refresh')
+    def test_main_full(self, mock_get_last_refresh, mock_fetch_data, 
+                       mock_save_raw_data, mock_update_last_refresh):
+        # Configure mock files
+        mock_get_last_refresh.return_value = '1900-01-01'
+        mock_fetch_data.return_value = [{'NCTId':'NCT001'}, {'NCTId': 'NCT002'}]
+        expected_numcalls = len(SEARCH_TERMS['conditions']) + len(SEARCH_TERMS['interventions'])
+        main()
+
+        # Check assertions
+        mock_get_last_refresh.assert_called_once()
+        self.assertEqual(mock_fetch_data.call_count, expected_numcalls)
+        mock_save_raw_data.assert_called_once()
+        studies = mock_save_raw_data.call_args[0][0]    
+        self.assertEqual(len(studies), 2*expected_numcalls)
+        mock_update_last_refresh.assert_called_once()
+
+    ''' 
+    Tests that the `main()` function of `pull_clinical_trials` script correctly handles incremental data pull (only updates, not the whole thing again)
+    '''
+    @patch('scripts.pull_clinical_trials.update_last_refresh')
+    @patch('scripts.pull_clinical_trials.save_raw_data')
+    @patch('scripts.pull_clinical_trials.fetch_data')
+    @patch('scripts.pull_clinical_trials.get_last_refresh')
+    def test_main_incremental(self, mock_get_last_refresh, mock_fetch_data,
+                       mock_save_raw_data, mock_update_last_refresh):
+        # Configure mock files
+        expected_numcalls = len(SEARCH_TERMS['conditions']) + len(SEARCH_TERMS['interventions'])
+        yesterday = '2025-09-24'
+        mock_get_last_refresh.return_value = yesterday
+        mock_fetch_data.return_value = [{'NCTId':'NCT001'}, {'NCTId':'NCT002'}]
+        main()
+
+        # Check assertions
+        mock_get_last_refresh.assert_called_once()
+        self.assertEqual(mock_fetch_data.call_count, expected_numcalls)
+        for call in mock_fetch_data.call_args_list:
+            call_posargs = call[0]
+            self.assertEqual(call_posargs[2], yesterday)
+        mock_save_raw_data.assert_called_once()
+        studies = mock_save_raw_data.call_args[0][0]
+        self.assertEqual(len(studies), 2*expected_numcalls)
+        mock_update_last_refresh.assert_called_once()
+        
+
+if __name__ == '__main__':
     unittest.main()
 
 

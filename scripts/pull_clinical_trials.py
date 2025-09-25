@@ -131,7 +131,7 @@ Params:
 * `results`: List of JSON documents, each JSON document is a study
 '''
 def save_raw_data(results):
-    with open(RAW_DATA_PATH, 'a') as file:
+    with open(RAW_DATA_PATH, 'w') as file:
         for study in results:
             json.dump(study, file)
             file.write('\n')
