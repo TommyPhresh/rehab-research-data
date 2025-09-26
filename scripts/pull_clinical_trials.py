@@ -138,8 +138,76 @@ def save_raw_data(results):
     print(f"Saved {len(results)} new studies.")
 
 '''
+Pulls data from raw JSONL file to be processed.
+'''
+def read_jsonl_file(path):
+    documents = []
+    if not os.path.exists(path):
+        print(f"{path} does not exist.")
+        return documents
+    try:
+        with open(path, 'r') as file:
+            for line in file:
+                if line.strip():
+                    documents.append(json.loads(line))
+    except json.JSONDecodeError as e:
+        print("Error decoding JSON:", e)
+        return []
+    except IOError as e:
+        print("I/O error:", e)
+        return []
+    return documents
+
+'''
+Formats results from raw JSONL into rehab-research.com universal format.
+'''
+def to_universal_format(path):
+    raw_data = read_jsonl_file(path)
+    return transform_data(raw_data)
+
+'''
+Transforms into universal format.
+'''
+def transform_data(raw_data):
+    transformed_data = []
+    for study in raw_data:
+        protocol = study.get('protocolSection', {})
+        identification = protocol.get('identificationModule', {})
+        description = protocol.get('descriptionModule', {})
+        status = protocol.get('statusModule', {})
+        sponsor = protocol.get('sponsorCollaboratorsModule', {})
+
+        nct_id = identification.get('nctId')
+
+        # Priority Order: Sponsor, Organization, default
+        org = None
+        org = sponsor.get('leadSponsor', {}).get('name')
+        if not org:
+            org = identification.get('organization', {}).get('fullName')
+        org = org if org else 'No organization listed'
+
+        # Priority Order: Primary completion, completion, default
+        deadline = None
+        deadline = status.get('primaryCompletionDateStruct', {}).get('date')
+        if not deadline:
+            deadline = status.get('completionDateStruct', {}).get('date')
+        deadline = deadline if deadline else '9999-12-31'
+
+        link = f'https://clinicaltrials.gov/study/{nct_id}' if nct_id else ''
+        transformed_data.append({
+            'name': identification.get('briefTitle', 'No name given'),
+            'org': org,
+            'desc': description.get('briefSummary', 'No description given'),
+            'deadline': deadline,
+            'link': link,
+            'isGrant': False
+            })
+    return transformed_data
+
+'''
 Appends results of searches for each term in SEARCH_TERMS in one list.
 Dumps results list into raw data JSONL file.
+Processes data into rehab-research.com's universal format.
 () -> ()
 '''
 def main():
@@ -160,6 +228,7 @@ def main():
     if all_results:
         save_raw_data(all_results)
         update_last_refresh()
+        search_engine_format = to_universal_format(RAW_DATA_PATH)
 
     else:
         print("No new studies found since last refresh.")

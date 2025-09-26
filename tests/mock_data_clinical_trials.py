@@ -17,9 +17,10 @@ MOCK_API_RESPONSE_SINGLE_PAGE = {
                 "statusModule": {
                     "overallStatus": "RECRUITING",
                     "lastUpdatePostDateStruct": {
-                        "date": "2024-09-25",
+                        "date": "2024-01-25",
                         "type": "ACTUAL"
-                    }
+                    },
+                    "primaryCompletionDate": "2025-09-25",
                 },
                 "sponsorCollaboratorsModule": {
                     "leadSponsor": {
@@ -111,3 +112,142 @@ MOCK_API_RESPONSE_MULTI_PAGE_2 = {
         }
     ]
 }
+
+MOCK_API_RESPONSE_SUPER_HAPPY = [
+  {
+    "protocolSection": {
+      "identificationModule": {
+        "nctId": "NCT00000001",
+        "briefTitle": "A Phase III Trial for New Immunotherapy Drug",
+        "organization": {
+          "fullName": "Fallback University Org Name"
+        }
+      },
+      "sponsorCollaboratorsModule": {
+        "leadSponsor": {
+          "name": "Global Pharma Research Institute",
+          "class": "INDUSTRY"
+        }
+      },
+      "statusModule": {
+        "primaryCompletionDateStruct": {
+          "date": "2025-09-25",
+          "type": "ESTIMATED"
+        },
+        "completionDateStruct": {
+          "date": "2026-01-31",
+          "type": "ESTIMATED"
+        }
+      },
+      "descriptionModule": {
+        "briefSummary": "This study aims to assess the efficacy and safety of a novel immunotherapy drug in patients with advanced cancer."
+        }
+    }
+  }
+]
+
+MOCK_API_RESPONSE_NO_ORG = [
+  {
+    "protocolSection": {
+      "identificationModule": {
+        "nctId": "NCT00000002",
+        "briefTitle": "A Study of Gene Therapy in Pediatric Patients",
+        "organization": {
+          "fullName": "Pediatric Health Consortium"
+        }
+      },
+      "sponsorCollaboratorsModule": {
+      },
+      "statusModule": {
+        "primaryCompletionDateStruct": {
+          "date": "2024-12-31"
+        }
+      },
+      "descriptionModule": {
+        "briefSummary": "Investigating a novel gene therapy approach."
+      }
+    }
+  }
+]
+
+MOCK_API_RESPONSE_NO_PRIMARY_DATE = [
+  {
+    "protocolSection": {
+      "identificationModule": {
+        "nctId": "NCT00000003",
+        "briefTitle": "Dietary Intervention for Metabolic Syndrome",
+        "organization": {
+          "fullName": "Fallback Org Name"
+        }
+      },
+      "sponsorCollaboratorsModule": {
+        "leadSponsor": {
+          "name": "Academic Medical Center"
+        }
+      },
+      "statusModule": {
+        "completionDateStruct": {
+          "date": "2027-06-15"
+        }
+      },
+      "descriptionModule": {
+        "briefSummary": "Assessing the impact of a low-carb diet on patients with metabolic syndrome."
+      }
+    }
+  }
+]
+
+MOCK_API_RESPONSE_SHITTY_DATA = [
+  {
+    "protocolSection": {
+      "identificationModule": {
+        "briefTitle": "A Study with Minimal Information"
+      },
+      "statusModule": {
+      },
+      "descriptionModule": {
+        "briefSummary": "This summary is present."
+      }
+    }
+  }
+]
+
+MOCK_JSONL_CONTENT = (
+    '{"id": "study1", "data": "A"}\n'
+    '{"id": "study2", "data": "B"}'
+)
+
+MOCK_API_RESPONSE_MAIN = {
+    "studies": [
+        {
+            "protocolSection": {
+                "identificationModule": {
+                    "nctId": "NCT99999999",
+                    "briefTitle": "Integrated Pipeline Test Study",
+                },
+                "sponsorCollaboratorsModule": {
+                    "leadSponsor": {
+                        "organizationName": "Integration Corp"
+                    }
+                },
+                "statusModule": {
+                    "primaryCompletionDateStruct": {
+                        "date": "2025-10-31"
+                    }
+                },
+                "descriptionModule": {
+                    "briefSummary": "A test to verify all components are working together."
+                }
+            }
+        }
+    ]
+}
+
+EXPECTED_TRANSFORMED_DATA = [{
+    'name': 'Integrated Pipeline Test Study',
+    'org': 'Integration Corp',
+    'desc': 'A test to verify all components are working together.',
+    'deadline': '2025-10-31',
+    'link': 'https://clinicaltrials.gov/study/NCT99999999',
+    'isGrant': False
+}]

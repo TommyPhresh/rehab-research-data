@@ -5,11 +5,11 @@ files.
 '''
 
 import unittest, os, sys, json
-from unittest.mock import patch, mock_open, Mock
+from unittest.mock import patch, mock_open, Mock, MagicMock
 from datetime import datetime
 
-from scripts.pull_clinical_trials import main, get_last_refresh, update_last_refresh, fetch_data, save_raw_data, LAST_PULL_DATE_FILE, API_URL, PAGE_SIZE, SEARCH_TERMS, RAW_DATA_PATH
-from tests.mock_data_clinical_trials import MOCK_API_RESPONSE_SINGLE_PAGE, MOCK_API_RESPONSE_MULTI_PAGE_1, MOCK_API_RESPONSE_MULTI_PAGE_2
+from scripts.pull_clinical_trials import main, get_last_refresh, update_last_refresh, fetch_data, save_raw_data, read_jsonl_file, transform_data, LAST_PULL_DATE_FILE, API_URL, PAGE_SIZE, SEARCH_TERMS, RAW_DATA_PATH
+from tests.mock_data_clinical_trials import MOCK_API_RESPONSE_SINGLE_PAGE, MOCK_API_RESPONSE_MULTI_PAGE_1, MOCK_API_RESPONSE_MULTI_PAGE_2, MOCK_API_RESPONSE_SUPER_HAPPY, MOCK_API_RESPONSE_NO_PRIMARY_DATE, MOCK_API_RESPONSE_NO_ORG, MOCK_API_RESPONSE_SHITTY_DATA, MOCK_JSONL_CONTENT, MOCK_API_RESPONSE_MAIN, EXPECTED_TRANSFORMED_DATA
 
 # The path to packages on the C: drive
 requests_path = 'C:\\Users\\ThomasRich\\AppData\\Local\\Packages\\PythonSoftwareFoundation.python.3.13_qbz5n2kfra8p0\\localcache\\local-packages\\Python313\\site-packages'
@@ -161,6 +161,105 @@ class TestSaveRawData(unittest.TestCase):
         actual_content = ''.join(arg[0][0] for arg in all_args)
         self.assertEqual(actual_content, expected_content)
 
+class TestReadData(unittest.TestCase):
+    '''
+    Ensures `read_jsonl_file` correctly reads JSONL data from designated save file.
+    '''
+    @patch('builtins.open', new_callable=mock_open, read_data=MOCK_JSONL_CONTENT)
+    def test_read_jsonl_happy(self, mock_file_open):
+        expected_data = [{'id': 'study1', 'data': 'A'},
+                         {'id': 'study2', 'data': 'B'}]
+        with patch('os.path.exists', return_value=True):
+            actual_data = read_jsonl_file(RAW_DATA_PATH)
+        self.assertEqual(actual_data, expected_data)
+        mock_file_open.assert_called_with(RAW_DATA_PATH, 'r')
+
+    '''
+    Ensures `read_jsonl_file` can handle a missing file.
+    '''
+    @patch('builtins.print')
+    @patch('os.path.exists', return_value=False)
+    def test_read_jsonl_file_missing_file(self, mock_exists, mock_print):
+        actual_data = read_jsonl_file(RAW_DATA_PATH)
+        self.assertEqual(actual_data, [])
+        self.assertIn('does not exist.', mock_print.call_args[0][0])
+
+    '''
+    Ensures `read_jsonl_file` can handle a corrupted file.
+    '''
+    @patch('builtins.print')
+    @patch('builtins.open', new_callable=mock_open, read_data = "{'id': 'study1', 'DELETE TABLE IF EXISTS}")
+    def test_read_jsonl_file_corrupted_file(self, mock_file_open, mock_print):
+        with patch('os.path.exists', return_value=True):
+            actual_data = read_jsonl_file(RAW_DATA_PATH)
+        self.assertEqual(actual_data, [])
+        mock_print.assert_called_once()
+        self.assertIn('Error decoding JSON:', mock_print.call_args[0][0])
+
+
+class TestDataTransform(unittest.TestCase):
+    '''
+    Ensures that `transform_data` correctly converts from clinicaltrials
+    API format to rehab-research universal format, using highest-priority values
+    for `org` and `deadline`.
+    '''
+    def test_transform_data_super_happy(self):
+        expected_transformed_data = [{
+            'name': 'A Phase III Trial for New Immunotherapy Drug',
+            'org': 'Global Pharma Research Institute',
+            'desc': 'This study aims to assess the efficacy and safety of a novel immunotherapy drug in patients with advanced cancer.',
+            'deadline': '2025-09-25',
+            'link': 'https://clinicaltrials.gov/study/NCT00000001',
+            'isGrant': False
+        }]
+        actual_transformed_data = transform_data(MOCK_API_RESPONSE_SUPER_HAPPY)
+
+        self.assertEqual(actual_transformed_data, expected_transformed_data)
+
+    '''
+    Ensures that `transform_data` correctly converts to universal format when sponsor not present.
+    '''
+    def test_transform_data_no_sponsor(self):
+        expected_transformed_data = [{
+            'name': 'A Study of Gene Therapy in Pediatric Patients',
+            'org': 'Pediatric Health Consortium',
+            'desc': 'Investigating a novel gene therapy approach.',
+            'deadline': '2024-12-31',
+            'link': 'https://clinicaltrials.gov/study/NCT00000002',
+            'isGrant': False
+        }]
+        actual_transformed_data = transform_data(MOCK_API_RESPONSE_NO_ORG)
+        self.assertEqual(actual_transformed_data, expected_transformed_data)
+
+    '''
+    Ensures that `transform_data` correctly converts to universal format when primary date not present.
+    '''
+    def test_transform_data_no_primary_date(self):
+        expected_transformed_data = [{
+            'name': 'Dietary Intervention for Metabolic Syndrome',
+            'org': 'Academic Medical Center',
+            'desc': 'Assessing the impact of a low-carb diet on patients with metabolic syndrome.',
+            'deadline': '2027-06-15',
+            'link': 'https://clinicaltrials.gov/study/NCT00000003',
+            'isGrant': False
+        }]
+        actual_transformed_data = transform_data(MOCK_API_RESPONSE_NO_PRIMARY_DATE)
+        self.assertEqual(actual_transformed_data, expected_transformed_data)
+
+    '''
+    Ensures that `transform_data` handles when both org and deadline priority values missing.
+    '''
+    def test_transform_data_no_priority_vals(self):
+        expected_transformed_data = [{
+            'name': 'A Study with Minimal Information',
+            'org': 'No organization listed',
+            'desc': 'This summary is present.',
+            'deadline': '9999-12-31',
+            'link': '',
+            'isGrant': False
+        }]
+        actual_transformed_data = transform_data(MOCK_API_RESPONSE_SHITTY_DATA)
+        self.assertEqual(actual_transformed_data, expected_transformed_data)
 
 class TestMain(unittest.TestCase):
     '''
@@ -212,7 +311,44 @@ class TestMain(unittest.TestCase):
         studies = mock_save_raw_data.call_args[0][0]
         self.assertEqual(len(studies), 2*expected_numcalls)
         mock_update_last_refresh.assert_called_once()
-        
+
+    # Hold data for integration test
+    mock_file_handle = mock_open()
+
+    '''
+    Tests `main()` function start to finish. Assumes all components of `main`
+    work correctly, only tests logical flow.
+    '''
+    @patch('scripts.pull_clinical_trials.requests.get')
+    @patch('scripts.pull_clinical_trials.get_last_refresh', return_value='2025-09-26')
+    @patch('scripts.pull_clinical_trials.update_last_refresh')
+    @patch('scripts.pull_clinical_trials.os.path.exists', return_value=True)
+    @patch('scripts.pull_clinical_trials.to_universal_format')
+    @patch('scripts.pull_clinical_trials.RAW_DATA_PATH', new='directory/raw.jsonl')
+    @patch('scripts.pull_clinical_trials.open', new_callable=lambda: TestMain.mock_file_handle)
+    def test_main_integration(self, mock_open,
+                              mock_to_universal_format, mock_exists,
+                              mock_update_last_refresh, mock_get_last_refresh,
+                              mock_get):
+        # Configure mock files
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = MOCK_API_RESPONSE_MAIN
+        mock_get.return_value = mock_response
+        mock_to_universal_format.return_value = EXPECTED_TRANSFORMED_DATA
+        raw_data = json.dumps(MOCK_API_RESPONSE_MAIN['studies'][0]) + '\n'
+        TestMain.mock_file_handle.return_value.readlines.return_value = [raw_data]
+
+        # Go
+        main()
+
+        # Check assertions
+        self.assertTrue(mock_get.called)
+        save_raw_data_call = [c for c in mock_open.call_args_list if c.args[1] == 'w'][0]
+        self.assertIn('directory/raw.jsonl', save_raw_data_call.args[0])
+        self.assertTrue(mock_update_last_refresh.called)
+        mock_to_universal_format.assert_called_with('directory/raw.jsonl')
+
 
 if __name__ == '__main__':
     unittest.main()
