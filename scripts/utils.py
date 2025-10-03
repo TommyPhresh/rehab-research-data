@@ -1,4 +1,5 @@
 
+import sys
 # The path to packages on the C: drive
 c_path = 'C:\\Users\\ThomasRich\\AppData\\Local\\Packages\\PythonSoftwareFoundation.python.3.13_qbz5n2kfra8p0\\localcache\\local-packages\\Python313\\site-packages'
 
@@ -6,7 +7,8 @@ c_path = 'C:\\Users\\ThomasRich\\AppData\\Local\\Packages\\PythonSoftwareFoundat
 if c_path not in sys.path:
     sys.path.append(c_path)
 
-import json
+import json, os
+from datetime import datetime
 
 '''
 Loads the timestamp of last successful refresh
@@ -90,5 +92,5 @@ def to_universal_format(path, transform_fn):
     raw_data = read_jsonl_file(path)
     if not raw_data:
         print(f"No data from {path} found.")
-        return
+        return []
     return transform_fn(raw_data)
