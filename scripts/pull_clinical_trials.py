@@ -2,7 +2,6 @@
 This file efficiently handles incremental pulls from clinicaltrials.gov
 Uses a constant list of terms to pull only relevant and updated/new data.
 '''
-
 import sys, os
 # The path to packages on the C: drive
 c_path = 'C:\\Users\\ThomasRich\\AppData\\Local\\Packages\\PythonSoftwareFoundation.python.3.13_qbz5n2kfra8p0\\localcache\\local-packages\\Python313\\site-packages'
@@ -11,8 +10,9 @@ c_path = 'C:\\Users\\ThomasRich\\AppData\\Local\\Packages\\PythonSoftwareFoundat
 if c_path not in sys.path:
     sys.path.append(c_path)
 
-import requests, json, pandas as pd
+import requests, json
 from datetime import datetime
+
 
 API_URL = "https://clinicaltrials.gov/v2/studies"
 SEARCH_TERMS = {
@@ -55,29 +55,6 @@ SEARCH_TERMS = {
     }
 PAGE_SIZE = 1000
 RAW_DATA_PATH = "data/raw/clinical_trials.jsonl"
-LAST_PULL_DATE_FILE = "data/last_pull_date.txt"
-
-'''
-Loads the timestamp of last successful refresh
-() -> ()
-'''
-def get_last_refresh():
-    try:
-        with open(LAST_PULL_DATE_FILE, 'r') as file:
-            return file.read().strip()
-    except FileNotFoundError:
-        return "1900-01-01"
-    except Exception as e:
-        print(f"Error: {e}")
-        return "1900-01-01"
-
-'''
-Updates the timestamp of last successful refresh
-() -> ()
-'''
-def update_last_refresh():
-    with open(LAST_PULL_DATE_FILE, 'w') as file:
-        file.write(datetime.now().strftime("%Y-%m-%d"))
 
 '''
 Returns results for one search term
@@ -125,47 +102,6 @@ def fetch_data(search_type, term, last_refresh):
     return all_results
 
 '''
-Appends new search results to JSONL file (raw data) defined for clinicaltrials.
-list[dict] -> ()
-Params:
-* `results`: List of JSON documents, each JSON document is a study
-'''
-def save_raw_data(results):
-    with open(RAW_DATA_PATH, 'w') as file:
-        for study in results:
-            json.dump(study, file)
-            file.write('\n')
-    print(f"Saved {len(results)} new studies.")
-
-'''
-Pulls data from raw JSONL file to be processed.
-'''
-def read_jsonl_file(path):
-    documents = []
-    if not os.path.exists(path):
-        print(f"{path} does not exist.")
-        return documents
-    try:
-        with open(path, 'r') as file:
-            for line in file:
-                if line.strip():
-                    documents.append(json.loads(line))
-    except json.JSONDecodeError as e:
-        print("Error decoding JSON:", e)
-        return []
-    except IOError as e:
-        print("I/O error:", e)
-        return []
-    return documents
-
-'''
-Formats results from raw JSONL into rehab-research.com universal format.
-'''
-def to_universal_format(path):
-    raw_data = read_jsonl_file(path)
-    return transform_data(raw_data)
-
-'''
 Transforms into universal format.
 '''
 def transform_data(raw_data):
@@ -204,35 +140,11 @@ def transform_data(raw_data):
             })
     return transformed_data
 
-'''
-Appends results of searches for each term in SEARCH_TERMS in one list.
-Dumps results list into raw data JSONL file.
-Processes data into rehab-research.com's universal format.
-() -> ()
-'''
-def main():
-    last_refresh = get_last_refresh()
-    all_results = []
-    print("Beginning searches...")
-    for term in SEARCH_TERMS["conditions"]:
-        results = fetch_data("conditions", term, last_refresh)
-        all_results.extend(results)
-    print("Finished searching conditions...")
-    
-    for term in SEARCH_TERMS["interventions"]:
-        results = fetch_data("interventions", term, last_refresh)
-        all_results.extend(results)
+METADATA = {
+    'name': 'clinicaltrials.gov',
+    'raw_path': RAW_DATA_PATH,
+    'fetch_fn': fetch_data,
+    'transform_fn': transform_data,
+    'search_terms': SEARCH_TERMS
+    }
 
-    print("Finished searching interventions...")
-    print(f"All searches returned {len(all_results)} total results.")
-    if all_results:
-        save_raw_data(all_results)
-        update_last_refresh()
-        search_engine_format = to_universal_format(RAW_DATA_PATH)
-
-    else:
-        print("No new studies found since last refresh.")
-
-if __name__ == "__main__":
-    main()
-        
