@@ -183,51 +183,20 @@ class TestFetchData(unittest.TestCase):
         mock_get.return_value = mock_response
 
         # set params and 'correct' answer
-        expected_records = [
-            {
-                "protocolSection": {
-                    "identificationModule": {
-                        "nctId": "NCT01234567",
-                        "briefTitle": "Introducing Palliative Care (PC) Within the Treatment of End Stage Liver Disease (ESLD)",
-                        "organization": {
-                            "fullName": "Budweiser"
-                        }
-                    },
-                    "statusModule": {
-                        "overallStatus": "RECRUITING",
-                        "primaryCompletionDateStruct": {
-                            "date": "2026-09-30"
-                        },
-                        "completionDateStruct": {
-                            "date": "2025-10-03"
-                        }
-                    },
-                    "sponsorCollaboratorsModule": {
-                        "leadSponsor": {
-                            "name": "Coors Light"
-                        }
-                    },
-                    "descriptionModule": {
-                        "briefSummary": "We are looking to investigate the efficacy of a PC driven treatment for ESLD on patient and family outcomes",
-                        "detailedDescription": "Not the right answer"
-                    }
-                }
-            }
-        ]
+        expected_result = [mock_response_payload['studies'][0]] * 2
 
-        test_search_terms = ["Test"]
+        test_search_terms = {'conditions': ['test'], 'interventions': ['test2']}
         test_last_refresh = "2025-01-01"
-        result = fetch_data('conditions', test_search_terms, test_last_refresh)
+        result = fetch_data(test_search_terms, test_last_refresh)
 
         # checks
-        mock_get.assert_called_once()
         args, kwargs = mock_get.call_args
         self.assertEqual(args[0], API_URL)
         params = kwargs['params']
         self.assertIn('query.cond', params)
         self.assertIn('filter.lastRefreshPostDate', params)
         self.assertEqual(params['filter.lastRefreshPostDate'], test_last_refresh)
-        self.assertEqual(result, expected_records)
+        self.assertEqual(result, expected_result)
 
     '''
     Tests fetch_data ability to handle an HTTP error
@@ -241,7 +210,7 @@ class TestFetchData(unittest.TestCase):
         mock_get.return_value = mock_response
 
         # check
-        result = fetch_data('interventions', ['test'], '2025-01-01')
+        result = fetch_data({'conditions': ['test'], 'interventions': ['test2']}, '2025-01-01')
         self.assertEqual(result, [])
 
     '''
@@ -256,6 +225,6 @@ class TestFetchData(unittest.TestCase):
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
 
-        result = fetch_data('conditions', ['test'], '2025-01-01')
+        result = fetch_data({'conditions': ['test'], 'interventions': ['test2']}, '2025-01-01')
         self.assertEqual(result, [])
         

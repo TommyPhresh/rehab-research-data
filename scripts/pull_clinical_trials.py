@@ -57,16 +57,15 @@ PAGE_SIZE = 1000
 RAW_DATA_PATH = "data/raw/clinical_trials.jsonl"
 
 '''
-Returns results for one search term
-(str, str, str) -> list[dict]
+Returns results across all search terms
+(dict[list[str]], str) -> list[dict]
 Params:
-* `search_type`: Either "conditions" or "interventions". Controls what type of results are returned.
-* `term`: Search term. 
+* `search_terms_obj`: Search terms dictionary with one entry for conditions list and one for interventions list.
 * `last_refresh`: YYYY-MM-DD date representing last ping to API.
 Return
 * List of JSON document. Each JSON document is a study.
 '''
-def fetch_data(search_type, term, last_refresh):
+def fetch_data(search_terms_obj, last_refresh):
     params = {
         "format": "json",
         "query.locs": "United States",
@@ -74,31 +73,32 @@ def fetch_data(search_type, term, last_refresh):
         "pageSize": PAGE_SIZE,
         "filter.lastRefreshPostDate": f"{last_refresh}"
         }
-    if search_type == "conditions":
-        params["query.cond"] = term
-    else:
-        params["query.intr"] = term
 
     all_results = []
-    page_token = None
+    for search_type in search_terms_obj:
+        for term in search_terms_obj[search_type]:
+            if search_type == "conditions":
+                params["query.cond"] = term
+            else:
+                params["query.intr"] = term
+            page_token = None
 
-    while True:
-        if page_token:
-            params['pageToken'] = page_token
-        print(f"Searching for {term}...")
-        response = requests.get(API_URL, params=params)
+            while True:
+                if page_token:
+                    params['pageToken'] = page_token
+                print(f"Searching for {term}...")
+                response = requests.get(API_URL, params=params)
 
-        if response.status_code != 200:
-            print(f"Error: {response.text}")
-            break
+                if response.status_code != 200:
+                    print(f"Error: {response.text}")
+                    break
 
-        data = response.json()
-        results = data.get("studies", [])
-        all_results.extend(results)
-        page_token = data.get("nextPageToken")
-        if not page_token:
-            break
-
+                data = response.json()
+                page_results = data.get("studies", [])
+                all_results.extend(page_results)
+                page_token = data.get("nextPageToken")
+                if not page_token:
+                    break
     return all_results
 
 '''
