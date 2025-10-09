@@ -52,14 +52,16 @@ def fetch_data(terms, last_refresh):
             response = requests.post(API_URL, json=params)
             response.raise_for_status()
             current_page = response.json().get('data', {}).get('oppHits', [])
-            if not current_page:
-                break
+            curr = sorted(current_page,
+                          key=lambda item: datetime.strptime(item['openDate'], "%m/%d/%Y").date(),
+                          reverse=True)
             oldhead = False
-            for grant in current_page:
-                date_string = grant.get("openDate")
+            for grant in curr:
+                print(f"Finished page {start_record // ROWS_PER_PAGE}. oldhead: {oldhead}")
+                date_string = grant.get('openDate')
                 if date_string:
                     try:
-                        open_date = datetime.strptime(date_string, "%m/%d/%Y").date()
+                        open_date = datetime.strptime(grant['openDate'], "%m/%d/%Y").date()
                         if open_date <= last_refresh_datetime:
                             oldhead = True
                             break
@@ -70,14 +72,40 @@ def fetch_data(terms, last_refresh):
                 break
             start_record += ROWS_PER_PAGE
         except requests.exceptions.RequestException as e:
-            print(f"ERROR in grants.gov:", e)
+            print(f"Error:", e)
             break
     return all_results
+                
+
+'''
+Transforms data from grants.gov format to rehab-research.com format.
+'''
+def transform_data(raw_data):
+    transformed_data = []
+    for grant in raw_data:
+        close_date_string = grant.get('closeDate')
+        try:
+            close_date = datetime.strptime(close_date_string, "%m/%d/%Y").date().strftime("%Y-%m-%d")
+        except ValueError: 
+            close_date = "This grant is forecasted; no close date posted yet."
+        if isinstance(grant['id'], str):
+            url = f"https://www.grants.gov/search-results-detail/{grant['id']}"
+        else:
+            url = ''
+        transformed_data.append({
+            'name': grant['title'],
+            'org': grant['agency'],
+            'desc': "Please click link to view description",
+            'deadline': close_date,
+            'link': url,
+            'isGrant': True
+        })
+    return transformed_data
                 
 METADATA = {
     "name": API_URL,
     "raw_path": RAW_DATA_PATH,
     "fetch_fn": fetch_data,
-    "transform_fn": "",
+    "transform_fn": transform_data,
     "search_terms": SEARCH_TERMS
 }

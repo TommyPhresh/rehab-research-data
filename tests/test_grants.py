@@ -257,5 +257,26 @@ class TestFetchData(unittest.TestCase):
         self.assertEqual(mock_post.call_count, 2)
         self.assertEqual(len(grants), 2)
        
+class TestTransformData(unittest.TestCase):
+    '''
+    Test transform_data happy path.
+    '''
+    def test_transform_data_happy(self):
+        raw_grant = [
+                {'id': '359731', 'number': '20250904-PQ', 'title': 'Rediscovering Our Revolutionary Tradition', 'agencyCode': 'NEH', 'agency': 'National Endowment for the Humanities', 'openDate': '06/16/2025', 'closeDate': '01/15/2026', 'oppStatus': 'posted', 'docType': 'synopsis', 'cfdaList': ['45.149']}]
+        expected = [{'name': 'Rediscovering Our Revolutionary Tradition', 'org': 'National Endowment for the Humanities', 'desc': 'Please click link to view description', 'deadline': '2026-01-15', 'link': 'https://www.grants.gov/search-results-detail/359731', 'isGrant': True}]
+        transformed = METADATA['transform_fn'](raw_grant)
+
+        self.assertEqual(transformed, expected)
+
+    '''
+    Test if transform_data can handle being dealt corrupt data.
+    '''
+    def test_transform_data_corrupt_data(self):
+        corrupt_grant = [{'id': 25, 'number': '20250904-PQ', 'title': 'FY25 Naval Air Warfare Center Aircraft Division Office-Wide Broad Agency Announcement', 'agencyCode': 'NEH', 'agency': 'NAVAIR', 'openDate': '06/16/2025', 'closeDate': '', 'oppStatus': 'posted', 'docType': 'synopsis', 'cfdaList': ['45.149']}]
+        expected = [{'name': 'FY25 Naval Air Warfare Center Aircraft Division Office-Wide Broad Agency Announcement', 'org': 'NAVAIR', 'desc': 'Please click link to view description', 'deadline': 'This grant is forecasted; no close date posted yet.', 'link': '', 'isGrant': True}]
+
+        transformed = METADATA['transform_fn'](corrupt_grant)
+        self.assertEqual(transformed, expected)
 
 
