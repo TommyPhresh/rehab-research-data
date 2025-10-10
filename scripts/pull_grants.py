@@ -52,6 +52,8 @@ def fetch_data(terms, last_refresh):
             response = requests.post(API_URL, json=params)
             response.raise_for_status()
             current_page = response.json().get('data', {}).get('oppHits', [])
+            if not current_page:
+                break
             curr = sorted(current_page,
                           key=lambda item: datetime.strptime(item['openDate'], "%m/%d/%Y").date(),
                           reverse=True)
