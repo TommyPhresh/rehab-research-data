@@ -32,7 +32,10 @@ MOCK_HAPPY_PATH = {
             },
             "completionDateStruct": {
                 "date": "2025-10-03"
-            }
+            },
+            "lastUpdatePostDateStruct": {
+                "date": "2025-05-01"
+            },
         },
         "sponsorCollaboratorsModule": {
             "leadSponsor": {
@@ -160,7 +163,10 @@ class TestFetchData(unittest.TestCase):
                             },
                             "completionDateStruct": {
                                 "date": "2025-10-03"
-                            }
+                            },
+                            "lastUpdatePostDateStruct": {
+                                "date": "2025-05-01"
+                            },
                         },
                         "sponsorCollaboratorsModule": {
                             "leadSponsor": {
@@ -194,8 +200,7 @@ class TestFetchData(unittest.TestCase):
         self.assertEqual(args[0], API_URL)
         params = kwargs['params']
         self.assertIn('query.cond', params)
-        self.assertIn('filter.lastRefreshPostDate', params)
-        self.assertEqual(params['filter.lastRefreshPostDate'], test_last_refresh)
+        self.assertIn('sort', params)
         self.assertEqual(result, expected_result)
 
     '''

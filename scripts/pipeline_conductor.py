@@ -1,3 +1,4 @@
+import sys, os
 # The path to packages on the C: drive
 c_path = 'C:\\Users\\ThomasRich\\AppData\\Local\\Packages\\PythonSoftwareFoundation.python.3.13_qbz5n2kfra8p0\\localcache\\local-packages\\Python313\\site-packages'
 
@@ -5,11 +6,15 @@ c_path = 'C:\\Users\\ThomasRich\\AppData\\Local\\Packages\\PythonSoftwareFoundat
 if c_path not in sys.path:
     sys.path.append(c_path)
 
-from utils import (get_last_refresh, update_last_refresh,
+from scripts.utils import (get_last_refresh, update_last_refresh,
                    save_raw_data, to_universal_format)
+from scripts.pull_clinical_trials import METADATA as clinical_trials_METADATA
+from scripts.pull_grants import METADATA as grants_METADATA
+
 
 SOURCE_REGISTRY = [
-    clinical_trials.METADATA
+    clinical_trials_METADATA,
+    grants_METADATA
 ]
 
 '''
@@ -25,15 +30,15 @@ def main():
 
     for source in SOURCE_REGISTRY:
         source_name = source['name']
-        raw_path = source['path']
+        raw_path = source['raw_path']
         print(f"Beginning source: {source_name}")
 
         try:
-            raw_results = source['fetch_func'](source['search_terms'], last_refresh)
+            raw_results = source['fetch_fn'](source['search_terms'], last_refresh)
             if raw_results:
                 save_raw_data(raw_results, raw_path)
             else:
-                print(f"No new data for {source_name")
+                print(f"No new data for {source_name}")
 
         except Exception as e:
             print(f"CRITICAL ERROR during {source_name} fetch stage: {e}")

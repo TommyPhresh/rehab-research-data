@@ -59,7 +59,6 @@ def fetch_data(terms, last_refresh):
                           reverse=True)
             oldhead = False
             for grant in curr:
-                print(f"Finished page {start_record // ROWS_PER_PAGE}. oldhead: {oldhead}")
                 date_string = grant.get('openDate')
                 if date_string:
                     try:
@@ -105,7 +104,7 @@ def transform_data(raw_data):
     return transformed_data
                 
 METADATA = {
-    "name": API_URL,
+    "name": "grants.gov",
     "raw_path": RAW_DATA_PATH,
     "fetch_fn": fetch_data,
     "transform_fn": transform_data,

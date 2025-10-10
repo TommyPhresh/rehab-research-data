@@ -14,7 +14,7 @@ import requests, json
 from datetime import datetime
 
 
-API_URL = "https://clinicaltrials.gov/v2/studies"
+API_URL = "https://clinicaltrials.gov/api/v2/studies"
 SEARCH_TERMS = {
     "conditions": [
         "Limb Loss", "Arthritis", "Osteoarthritis", "Herniated Disc", "Scoliosis", "Spinal Stenosis",
@@ -68,13 +68,14 @@ Return
 def fetch_data(search_terms_obj, last_refresh):
     params = {
         "format": "json",
-        "query.locs": "United States",
+        "query.locn": "United States",
         "filter.overallStatus": "RECRUITING|NOT_YET_RECRUITING|ACTIVE_NOT_RECRUITING|ENROLLING_BY_INVITATION",
         "pageSize": PAGE_SIZE,
-        "filter.lastRefreshPostDate": f"{last_refresh}"
-        }
+        "sort": "LastUpdatePostDate"
+    }
 
     all_results = []
+    last_refresh_datetime = datetime.strptime(last_refresh, "%Y-%m-%d").date()
     for search_type in search_terms_obj:
         for term in search_terms_obj[search_type]:
             if search_type == "conditions":
@@ -93,11 +94,31 @@ def fetch_data(search_terms_obj, last_refresh):
                     print(f"Error: {response.text}")
                     break
 
-                data = response.json()
-                page_results = data.get("studies", [])
-                all_results.extend(page_results)
-                page_token = data.get("nextPageToken")
-                if not page_token:
+                try: 
+                    data = response.json()
+                    page_results = data.get("studies", [])
+                    if not page_results:
+                        break
+                    oldhead = False
+                    for opp in page_results:
+                        date_string = opp['protocolSection']['statusModule']['lastUpdatePostDateStruct']['date']
+                        if date_string:
+                            try:
+                                post_date = datetime.strptime(date_string, "%Y-%m-%d").date()
+                                if post_date <= last_refresh_datetime:
+                                    oldhead = True
+                                    break
+                            except ValueError:
+                                pass
+                        all_results.append(opp)
+                    if oldhead:
+                        break
+                    page_token = data.get("nextPageToken")
+                    if not page_token:
+                        break
+                except requests.exceptions.JSONDecodeError as e:
+                    print("Error:", e)
+                    print("RESPONSE PREVIEW:", response.text[:250])
                     break
     return all_results
 
