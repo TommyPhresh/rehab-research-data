@@ -12,6 +12,7 @@ from datetime import datetime
 
 from scripts.utils import (get_last_refresh, update_last_refresh,
                            save_raw_data, read_jsonl_file, to_universal_format)
+from scripts.pipeline_conductor import main as pipeline_main
 
 DEFAULT_DATE = '1900-01-01'
 MOCK_DATE_PATH = 'data/last_pull_date.txt'
@@ -85,7 +86,7 @@ class TestIOLogic(unittest.TestCase):
         data = read_jsonl_file(MOCK_RAW_DATA_PATH)
         self.assertEqual(data, [])
 
-class TestPipelineConductor(unittest.TestCase):
+class TestToUniversalFormat(unittest.TestCase):
     '''
     Universal mock transform_data function
     '''
@@ -109,3 +110,51 @@ class TestPipelineConductor(unittest.TestCase):
     def test_to_universal_format_no_data(self, mock_read):
         processed_data = to_universal_format(MOCK_RAW_DATA_PATH, self.mock_transform_data)
         self.assertEqual(processed_data, [])
+
+class TestPipelineConductor(unittest.TestCase):
+    MOCK_METADATA = {
+        'name': 'mock src',
+        'fetch_fn': MagicMock(return_value=[{'id': 1}, {'id': 2}]),
+        'transform_fn': MagicMock(side_effect=lambda data: [f'transform_{d["id"]}' for d in data]),
+        'search_terms': ['test', 'not test'],
+        'raw_path': 'directory/raw.jsonl'
+    }
+
+    '''
+    Test pipeline is in correct sequence
+    '''
+    @patch('scripts.utils.get_last_refresh', return_value='2024-03-14')
+    @patch('scripts.utils.save_raw_data')
+    @patch('scripts.utils.update_last_refresh')
+    @patch('requests.get')
+    @patch('requests.post')
+    def test_pipeline_correct_sequence(self, mock_update_last_refresh,
+                              mock_save_raw_data, mock_get_last_refresh,
+                              mock_get, mock_post):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = []
+        mock_get.return_value = mock_response
+        mock_post.return_value = mock_response
+
+        results = pipeline_main()        
+
+        mock_get_last_refresh.assert_called_once()
+        self.MOCK_METADATA['fetch_fn'].assert_called_with(
+            self.MOCK_METADATA['search_terms'],
+            '2024-03-14'
+        )
+        
+        expected_raw_data = [{'id': 1}, {'id': 2}]
+        mock_save_raw_data.assert_called_with(
+            expected_raw_data,
+            self.MOCK_METADATA['raw_path']
+        )
+
+        self.MOCK_METADATA['transform_fn'].assert_called_with(expected_raw_data)
+
+        expected_transformed = ['transform_1', 'transform_2']
+        self.assertEqual(results, expected_transformed)
+        
+        mock_update_last_refresh.assert_called_once()
+        
