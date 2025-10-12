@@ -52,6 +52,25 @@ def save_raw_data(results, path):
     except Exception as e:
         print(f"Error: {e}")
 
+'''
+Saves rehab-research.com formatted data.
+`(list[dict[Any]], str) -> ()`
+Params:
+    `data: list[dict[Any]]`. List of JSON documents
+    `path: str`. Dest filepath.
+'''
+def save_processed_data(data, path):
+    if not data:
+        print("No processed data to save")
+        return
+    try:
+        with open(path, 'w') as file:
+            for row in data:
+                json.dump(row, file)
+                file.write('\n')
+        print(f"Saved {len(data)} rows to {path}")
+    except Exception as e:
+        print("Error:", e)
 
 '''
 Pulls data from raw JSONL file to be processed.

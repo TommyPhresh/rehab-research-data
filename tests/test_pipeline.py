@@ -112,49 +112,66 @@ class TestToUniversalFormat(unittest.TestCase):
         self.assertEqual(processed_data, [])
 
 class TestPipelineConductor(unittest.TestCase):
-    MOCK_METADATA = {
-        'name': 'mock src',
-        'fetch_fn': MagicMock(return_value=[{'id': 1}, {'id': 2}]),
-        'transform_fn': MagicMock(side_effect=lambda data: [f'transform_{d["id"]}' for d in data]),
-        'search_terms': ['test', 'not test'],
-        'raw_path': 'directory/raw.jsonl'
-    }
-
     '''
-    Test pipeline is in correct sequence
+    Test pipeline is in correct sequence and functions happily
     '''
-    @patch('scripts.utils.get_last_refresh', return_value='2024-03-14')
-    @patch('scripts.utils.save_raw_data')
-    @patch('scripts.utils.update_last_refresh')
+    @patch('scripts.pipeline_conductor.get_last_refresh', return_value='2024-03-14')
+    @patch('scripts.pipeline_conductor.save_raw_data')
+    @patch('scripts.pipeline_conductor.update_last_refresh')
     @patch('requests.get')
     @patch('requests.post')
-    def test_pipeline_correct_sequence(self, mock_update_last_refresh,
-                              mock_save_raw_data, mock_get_last_refresh,
-                              mock_get, mock_post):
+    @patch('scripts.pipeline_conductor.SOURCE_REGISTRY')
+    @patch('scripts.utils.read_jsonl_file', return_value=MOCK_RAW_DATA)
+    @patch('scripts.pipeline_conductor.save_processed_data')
+    def test_pipeline_correct_sequence(self,
+                                       mock_save_processed_data,
+                                       mock_read_jsonl_file,
+                                       mock_SOURCE_REGISTRY,
+                                       mock_post,
+                                       mock_get,
+                                       mock_update_last_refresh,
+                                       mock_save_raw_data, 
+                                       mock_get_last_refresh):
+        local_fetch = MagicMock(return_value=MOCK_RAW_DATA)
+        local_transform = MagicMock(side_effect=lambda data: [f'transform_{d["id"]}' for d in data])
+
+        local_metadata = {
+            'name': 'mock', 
+            'search_terms': ['test', 'search'],
+            'fetch_fn': local_fetch,
+            'transform_fn': local_transform,
+            'raw_path': 'directory/raw.jsonl'
+        }
+        mock_SOURCE_REGISTRY.__iter__.return_value = [local_metadata]
+
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = []
+        mock_response.json.return_value = {}
+        mock_response.raise_for_status = None
         mock_get.return_value = mock_response
         mock_post.return_value = mock_response
-
+        local_metadata['fetch_fn'].reset_mock()
+        
         results = pipeline_main()        
 
         mock_get_last_refresh.assert_called_once()
-        self.MOCK_METADATA['fetch_fn'].assert_called_with(
-            self.MOCK_METADATA['search_terms'],
+        local_metadata['fetch_fn'].assert_called_with(
+            local_metadata['search_terms'],
             '2024-03-14'
         )
         
-        expected_raw_data = [{'id': 1}, {'id': 2}]
         mock_save_raw_data.assert_called_with(
-            expected_raw_data,
-            self.MOCK_METADATA['raw_path']
+            MOCK_RAW_DATA,
+            local_metadata['raw_path']
         )
 
-        self.MOCK_METADATA['transform_fn'].assert_called_with(expected_raw_data)
+        mock_read_jsonl_file.assert_called_with(local_metadata['raw_path'])
+        local_metadata['transform_fn'].assert_called_with(MOCK_RAW_DATA)
 
-        expected_transformed = ['transform_1', 'transform_2']
-        self.assertEqual(results, expected_transformed)
+        expected_transformed = ['transform_BULL', 'transform_CRAP'] * 2
+        mock_save_processed_data.assert_called_with(
+                expected_transformed,
+                'data/processed/unvectorized.jsonl')
         
         mock_update_last_refresh.assert_called_once()
         

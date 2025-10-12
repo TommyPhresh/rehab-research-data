@@ -7,7 +7,9 @@ if c_path not in sys.path:
     sys.path.append(c_path)
 
 from scripts.utils import (get_last_refresh, update_last_refresh,
-                   save_raw_data, to_universal_format)
+                           read_jsonl_file,
+                           save_raw_data, save_processed_data, 
+                           to_universal_format)
 from scripts.pull_clinical_trials import METADATA as clinical_trials_METADATA
 from scripts.pull_grants import METADATA as grants_METADATA
 
@@ -54,6 +56,9 @@ def main():
     print("\n PIPELINE ENDED")
     print(f"Retrieved {len(all_records)} rows")
     if len(all_records) > 0:
+        old_data = read_jsonl_file('data/processed/unvectorized.jsonl')
+        total = old_data + all_records
+        save_processed_data(total, 'data/processed/unvectorized.jsonl')
         update_last_refresh()
     else:
         print("No new data across ALL sources. No updates")
