@@ -1,4 +1,3 @@
-
 import sys
 # The path to packages on the C: drive
 c_path = 'C:\\Users\\ThomasRich\\AppData\\Local\\Packages\\PythonSoftwareFoundation.python.3.13_qbz5n2kfra8p0\\localcache\\local-packages\\Python313\\site-packages'
