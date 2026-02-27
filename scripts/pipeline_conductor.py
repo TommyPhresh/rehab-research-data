@@ -12,11 +12,13 @@ from scripts.utils import (get_last_refresh, update_last_refresh,
                            to_universal_format)
 from scripts.pull_clinical_trials import METADATA as clinical_trials_METADATA
 from scripts.pull_grants import METADATA as grants_METADATA
+from scripts.pull_americanheart import METADATA as AHA_METADATA
 
 
 SOURCE_REGISTRY = [
     clinical_trials_METADATA,
-    grants_METADATA
+    grants_METADATA,
+    AHA_METADATA,
 ]
 
 '''

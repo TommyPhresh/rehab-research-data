@@ -53,7 +53,8 @@ def transform_aha(html):
 
 METADATA = {
     "name": "American Heart Association",
-    "raw_path": RAW_DATA_PATH,
+    "raw_path": 'D:\\Personal\\rehab-research-opps\\data',
     "fetch_fn": fetch_aha,
     "transform_fn": transform_aha,
+    'search_terms': [],
 }
