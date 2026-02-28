@@ -14,6 +14,7 @@ from scripts.pull_clinical_trials import METADATA as clinical_trials_METADATA
 from scripts.pull_grants import METADATA as grants_METADATA
 from scripts.pull_americanheart import METADATA as AHA_METADATA
 from scripts.pull_tomberg import METADATA as tomberg_METADATA
+from scripts.pull_rmjs import METADATA as rmjsf_METADATA
 
 
 SOURCE_REGISTRY = [
@@ -21,6 +22,7 @@ SOURCE_REGISTRY = [
     grants_METADATA,
     AHA_METADATA,
     tomberg_METADATA,
+    rmjsf_METADATA
 ]
 
 '''
