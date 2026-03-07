@@ -1,20 +1,7 @@
 import os, json, pickle, hashlib, faiss
 import pandas as pd
 from sentence_transformers import SentenceTransformer
-
-MODEL_NAME = "all-MiniLM-L6-v2"
-
-BASE_DIR = "D:/Personal/rehab-research-data"
-DATA_DIR = os.path.join(BASE_DIR, "data")
-INDEX_DIR = os.path.join(BASE_DIR, "index")
-MODEL_PATH = os.path.join(BASE_DIR, "models")
-
-MANIFEST_PATH = os.path.join(INDEX_DIR, "sources.json")
-INDEX_PATH = os.path.join(INDEX_DIR, "embeddings.index")
-MAPPING_PATH = os.path.join(INDEX_DIR, "mapping.pkl")
-
-os.makedirs(INDEX_DIR, exist_ok=True)
-df = pd.read_parquet(os.path.join(DATA_DIR, "data.parquet"))
+from constants import MODEL_NAME, DATA_DIR, INDEX_PATH, MAPPING_PATH, MANIFEST_PATH
 
 '''
 Lightweight model load for limited machine architectures
@@ -25,9 +12,10 @@ def load_model():
     return SentenceTransformers(modules=[word_embedding_model, pooling_model])
 
 '''
-Creates embeddings for legacy dataset to establish baseline
+Initial index for 10/2025 baseline dataset
 '''
-def create_initial_index(df, batch_size=64):
+def create_initial_index(batch_size=64):
+    df = pd.read_parquet(os.path.join(DATA_DIR, "data.parquet")
     df = df.fillna('')
     df['search_blob'] = df['name'] + ' ' + df['org'] + ' ' + df['desc']
     model = load_model()
