@@ -1,8 +1,10 @@
-import io, csv, dateutil.parser
 from flask import Blueprint, render_template, request, current_app, redirect, url_for, flash, make_response
-from flask_login import login_required
+from flask_login import login_user, logout_user, login_required, current_user
+from werkzeug.security import check_password_hash
 from flask_mail import Message
 from extensions import mail
+
+from user import User, get_user_from_db
 
 main = Blueprint('main', __name__)
 
@@ -27,21 +29,25 @@ deprecated and extremely simple login; we'll make this better soon
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('main.homepage'))
-    else:
-        if request.method == "POST":
-            username = request.form['username']
-            pw = request.form['password']
-            if username in users and users[username]['password'] == pw:
-                user = User(username)
-                login_user(user)
-                return redirect(url_for('main.homepage'))
-            else: return "Invalid credentials", 401
-        return render_template('login.html')
+    if request.method == "POST":
+        username = request.form.get('username')
+        password = request.form.get('password')
+        remember = True if request.form.get('remember') else False
+        user_data = get_user_from_db(username)
+        if user_data and check_password_hash(user_data[1], password):
+            user = User(username)
+            login_user(user, remember=remember)
+            next_page = request.args.get('next')
+            return redirect(next_page) if next_page else redirect(url_for('main.homepage'))
+        else:
+            flash("Invalid username or password. Please try again.", "error")
+    return render_template('login.html')
 
 @main.route('/logout')
 @login_required
 def logout():
     logout_user()
+    flash("You have been logged out.", 'info')
     return redirect(url_for('main.login'))
 
 '''
@@ -62,7 +68,7 @@ def search():
         results=results,
         query=search_term,
         length=len(results),
-        display=specialty if specialty else query
+        display=specialty if specialty else query,
         total_pages = (len(results) // 25) + 1 if results else 0
         )
 '''

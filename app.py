@@ -1,9 +1,9 @@
 import os
 from flask import Flask
-from flask_login import LoginManager
 
 from db import SearchEngine
 from user import register_user_loader
+from extensions import login_manager
 
 def create_app():
     app = Flask(__name__)
@@ -19,10 +19,8 @@ def create_app():
         )
         print('Loaded search engine')
     except Exception as e:
-        print'Error in search engine load:', e)
+        print('Error in search engine load:', e)
 
-    login_manager = LoginManager()
-    login_manager.login_view = 'main.login'
     login_manager.init_app(app)
     register_user_loader()
     from routes import main as main_blueprint

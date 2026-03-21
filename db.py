@@ -22,7 +22,7 @@ class SearchEngine:
         target_ids = list(results.keys())
         id_list_strings = ",".join(map(str, target_ids))
         query = f"""
-            SELECT name, org, desc, due_date, id, link, isGrant
+            SELECT name, org, desc, deadlin, link, isGrant, embedding, id
             FROM funding
             WHERE id IN ({id_list_strings})
             """
