@@ -1,0 +1,78 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  </head>
+
+  <body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full">
+      <div class="bg-white rounded-2x1 shadow-x1 shadow-slate-200/50 border border-slate-100 overflow-hidden">
+        <div class="p-8">
+          <h2 class="text-x1 font-bold text-slate-800 mb-2">Welcome back</h2>
+          <p class="text-sm text-slate-500 mb-6 font-medium">Please sign in to access the search engine</p>
+
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+                <div class="mb-4 p-3 rounded-lg flex items-start gap-3 {% if category == 'error' %}bg-red-50 text-red-700 border border-red-100{% else %}bg-blue-50 text-blue-700 border border-blue-100{% endif %}">
+                  <i class="fas {% if category == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} mt-1"></i>
+                  <span class="text-sm font-medium">{{ message }}</span>
+                </div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+
+          <form action="{{ url_for('main.login', next=request.args.get('next')) }}" method="POST" class="space-y-5">
+            <div>
+              <label for="username" class="block text-sm font-semibold text-slate-700 mb-1">Username</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                  <i class="far fa-user"></i>
+                </span>
+                <input type="text" name="username" id="username" required class="block w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-x1 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="Username">
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label for="password" class="block text-sm font-semibold text-slate-700">Password</label>
+                <a href="#" class="text-xs font-medium text-blue-600 hover:text-blue-700">Forgot password?</a>
+              </div>
+
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                  <i class="far fa-lock"></i>
+                </span>
+                <input type="password" name="password" id="password" required class="block w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rouded-x1 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="********">
+              </div>
+            </div>
+
+            <div class="flex items-center">
+              <input type="checkbox" name="remember" id="remember" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded cursor-pointer">
+              <label for="remember" class="ml-2 block text-sm text-slate-600 cursor-pointer">
+                Remember me
+              </label>
+            </div>
+
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-x1 shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-0.5 active:translate-y-0">
+              Sign In
+            </button>
+          </form>
+        </div>
+
+        <div class="px-8 py-4 bg-slate-50 border-t border-slate-100 text-center">
+          <p class="text-xs text-slate-500">
+          Need access? <a href="mailto:dev_tommyphresh@yahoo.com" class="text-blue-600 hover:underline font-semibold">Contact Administrator</a>
+          </p>
+        </div>
+      </div>
+
+      <p class="text-center text-slate-400 text-[10px] mt-8 uppercase tracking-widest font-bold">
+      Rehab-Research.com &bull; V2.0
+      </p>
+    </div>
+  </body>
+</html>
