@@ -30,15 +30,19 @@ def search(query, model, index, mapping, top_k=25):
             results.append(item)
     return results
 
-if __name__ == "main":
-    model, index, mapping = load_resources()
-    while True:
-        user_query = input("\nEnter search term (or q to quit): ")
-        if user_quer.lower() == "q":
-            break
-        results = search(user_query, model, index, mapping)
-        for i, result in enumerate(results, 1):
-            name = result.get('name', 'N/A')
-            org = result.get('org', 'N/A')
-            score = round(result['score'] * 100, 2)
-            print(f"{i}. [{score}% Match] {name} ({org})")
+if __name__ == "__main__":
+    print('Got to main')
+    try:
+        model, index, mapping = load_resources()
+        while True:
+            user_query = input("\nEnter search term (or q to quit): ")
+            if user_query.lower() == "q":
+                break
+            results = search(user_query, model, index, mapping)
+            for i, result in enumerate(results, 1):
+                name = result.get('name', 'N/A')
+                org = result.get('org', 'N/A')
+                score = round(result['score'] * 100, 2)
+                print(f"{i}. [{score}% Match] {name} ({org})")
+    except Exception as e:
+        print("Error", e)
