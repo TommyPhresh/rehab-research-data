@@ -1,0 +1,107 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Engine V2</title>
+    <script src="http://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  </head>
+
+  <body class="bg-slate-50 min-h-screen">
+    <nav class="bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-50">
+      <div class="max-w-7x1 mx-auto flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+          </div>
+          <span class="font-bold text-slate-800 tracking-tight text-lg">Rehab-Research.com v2</span>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <div class="hidden md:block text-right">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active User</p>
+            <p class="text-xs font-semibold text-slate-700">{{ current_user.id }} </p>
+          </div>
+
+          <div class="h-8 w-px bg-slate-200 mx-2"></div>
+          <a href="{{ url_for('main.logout') }}" class="px-4 py-2 text-xs font-bold text-red-500 hover:bg-red-50 rounded-lg transition">
+            Logout
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="max-w-6x1 mx-auto pt-12 pb-24 px-6">
+      <div class="max-w-3x1 mx-auto text-center mb-16">
+        <h1 class="text-4x1 font-black text-slate-900 mb-4 tracking-tight">Search Funding Opportunities</h1>
+        <p class="text-slate-500 text-lg">Access funding opportunities across {{ specialties|length }} clinical specialties.</p>
+
+        <div class="mt-8 relative group">
+          <form action="{{ url_for('main.search') }}" method="GET">
+            <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+              <i class="fas fa-search text-slate-400 group-focus-within:text-blue-600 transition-colors"></i>
+            </div>
+            <input type="text" name="query" required class="block w-full pl-14 pr-36 bg-white border border-slate-200 rounded-2x1 shadow-x1 shadow-slate-200/40 text-slate-900 text-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all" placeholder="Enter search here...">
+            <button type="submit" class="absolute right-2 top-2 bottom-2 px-8 bg-slate-900 hover:bg-black text-white font-bold rounded-x1 transition-all shadow-lg">
+              Submit
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="mb-20">
+        <div class="flex items-center justify-between mb-8">
+          <h2 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Clinical Specialties</h2>
+          <span class="h-px flex-grow bg-slate-200 ml-4"></span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 x1:grid-cols-7 gap-4">
+          {% for spec in specialties %}
+          <a href="{{ url_for('main.search', query=spec.query) }}" class="bg-white border border-slate-200 p-5 rounded-2x1 shadow-sm hover:shadow-x1 hover:border-blue-500 hover:-translate-y-1 transition-all group flex flex-col items-center justify-center min-h-[100px] text-center">
+            <span class="text-xs font-extrabold text-slate-700 leading-tight group-hover:text-blue-600 transition-colors px-2">
+              {{ spec.name }}
+            </span>
+            <div class="w-0 h-1 bg-blue-600 rounded-full mt-3 group-hover:w-8 transition-all duration-300"></div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="bg-white rounded-2x1 border border-slate-200 p-6 col-span-2">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <h3 class="font-bold text-slate-800">Upgraded Search Speed</h3>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="p-4 bg-slate-50 rounded-x1">
+              <p class="text-sm font-bold text-slate-700">New Search Algorithm</p>
+            </div>
+            <div class="p-4 bg0slate-50 rounded-x1">
+              <p class="text-[10px] uppercase font-bold text-slate-400 mb-1">Latency</p>
+              <p class="text-sm font-bold text-slate-700">~200ms</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-blue-600 rounded-2x1 p-6 text-white shadow-lg shadow-blue-200 flex flex-col justify-center">
+          <h3 class="font-bold text-lg mb-2">Search Tip</h3>
+          <p class="text-xs text-blue-100 leading-relaxed">
+          Search algorithm looks for concepts. Instead of typing "knee arthroplasty", try "post-operative rehabilitation outcomes after knee arthroplasty" for more precise results.
+          </p>
+        </div>
+      </div>
+    </main>
+
+    <footer class="text-center pb-12">
+      <div class="inline-block px-4 py-2 bg-white border border-slate-200 rounded-full">
+        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+        User: Verified &bull; {{ current_user.id }}
+        </p>
+        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+        Designed by Ifeanyi Eze &bull; Developed by Thomas Rich
+        </p>
+      </div>
+    </footer>
+  </body>
+</html
