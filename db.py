@@ -22,15 +22,24 @@ class SearchEngine:
         target_ids = list(results.keys())
         id_list_strings = ",".join(map(str, target_ids))
         query = f"""
-            SELECT name, org, desc, deadlin, link, isGrant, embedding, id
+            SELECT name, org, "desc", deadline, link, isGrant, id
             FROM funding
             WHERE id IN ({id_list_strings})
             """
-        rows = self.conn.execute(query).fetch_all()
+        rows = self.conn.execute(query).fetchall()
         final_results = []
         for row in rows:
             row_list = list(row)
-            row_id = row_list[4]
-            row_list[4] = results.get(row_id, 0.0)
-            final_results.append(row_list)
-        return final_results.sort(key=lambda x: x[4], reverse=True)
+            row_id = row_list[6]
+            score = results.get(row_id, 0.0)
+            final_row = [
+                row_list[0], # name
+                row_list[1], # org
+                row_list[2], # desc
+                row_list[3], # deadline
+                row_list[4], # link
+                row_list[5], # isGrant
+                score
+            ]
+            final_results.append(final_row)
+        return sorted(final_results, key=lambda x: x[6], reverse=True)
