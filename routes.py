@@ -68,28 +68,6 @@ def logout():
     return redirect(url_for('main.login'))
 
 '''
-new search function. much faster
-'''
-@main.route('/search', methods=['GET'])
-@login_required
-def search():
-    query = request.args.get('query', '').strip()
-    specialty = request.args.get('specialty', '').strip()
-    search_term = specialty if specialty else query
-    if not search_term:
-        return render_template('homepage.html')
-
-    results = current_app.search_engine.search(search_term, top_k=5000, threshold=0.5)
-    return render_template(
-        'search.html',
-        results=results,
-        query=search_term,
-        length=len(results),
-        display=specialty if specialty else query,
-        total_pages = (len(results) // 25) + 1 if results else 0
-        )
-       
-'''
 user feature request and bug reports
 '''
 @main.route('/contact', methods=["GET", "POST"])
@@ -119,9 +97,36 @@ def contact():
             return redirect(url_for('main.contact'))
     return render_template('contact.html')
 
+'''
+new search function. much faster
+'''
+@main.route('/search', methods=['GET'])
+@login_required
+def search():
+    query = request.args.get('query', '').strip()
+    specialty = request.args.get('specialty', '').strip()
+    search_term = specialty if specialty else query
+    if not search_term:
+        return render_template('homepage.html')
+
+    results = current_app.search_engine.search(search_term, top_k=5000, threshold=0.5)
+    cache.set('query', search_term)
+    cache.set('display', search_term)
+    cache.set(f'search_results_{search_term}', results)
+    return render_template(
+        'search.html',
+        results=results,
+        query=search_term,
+        length=len(results),
+        display=specialty if specialty else query,
+        sort_criteria='similarity',
+        ascend='DESC',
+        current_page=1,
+        total_pages = (len(results) // 25) + 1 if results else 0
+        )
+
 def search_page(page, order_criteria, order_asc, show_trials, show_grants):
     per_page = 25
-    from app import cache
     user_query = cache.get('query')
     display = cache.get('display')
     results = cache.get(f'search_results_{user_query}')
@@ -130,23 +135,24 @@ def search_page(page, order_criteria, order_asc, show_trials, show_grants):
         results = current_app.search_engine.search(user_query)
         cache.set(f"search_results_{user_query}", results)
     elif results is None:
+        print('results was null')
         return redirect(url_for('main.homepage'))
 
     if not show_trials and not show_grants:
         filtered_results = []
     elif show_trials and show_grants:
-        filtered_results = results
+        filtered_results = results[:]
     elif show_trials:
-        filtered_results = [row for row in results if not row[6]]
+        filtered_results = [row for row in results if not row[5]]
     elif show_grants:
-        filtered_results = [row for row in results if row[6]]
+        filtered_results = [row for row in results if row[5]]
 
     reverse = (order_asc == "DESC")
     if order_criteria == "due_date":
         filtered_results.sort(key=lambda x: dateutil.parser.parse(x[3]) if x[3] else dateutil.parser.parse("1900-01-01"),
                               reverse=reverse)
     else:
-        filtered_results.sort(key=lambda x: float(x[4]),
+        filtered_results.sort(key=lambda x: float(x[6]),
                               reverse=reverse)
     total_pages = (len(filtered_results) + per_page - 1) // per_page
 
@@ -158,9 +164,24 @@ def search_page(page, order_criteria, order_asc, show_trials, show_grants):
                            display=display,
                            show_trials=show_trials,
                            show_grants=show_grants,
+                           sort_criteria=order_criteria,
+                           ascend=order_asc,
                            length=len(filtered_results),
                            results=paginated_results,
                            total_pages=total_pages)
+
+@main.route('/search/page/<int:page>')
+@login_required
+def search_page_router(page):
+    def parse_helper(s, default=True):
+        if s is None: return default
+        return s.lower() in ('1', 'true')
+
+    order_criteria = request.args.get('sort_criteria', 'similarity')
+    order_asc = request.args.get('ascend', "DESC")
+    show_trials = parse_helper(request.args.get('show_trials'), default=False if 'query' in request.args else True)
+    show_grants = parse_helper(request.args.get('show_grants'), default=False if 'query' in request.args else True)
+    return search_page(page, order_criteria, order_asc, show_trials, show_grants)
 
 @main.route('/search/export')
 @login_required
@@ -178,23 +199,23 @@ def export_csv():
     elif show_trials and show_grants:
         pass
     elif show_trials:
-        results = [row for row in results if not row[6]]
+        results = [row for row in results if not row[5]]
     elif show_grants:
-        results = [row for row in results if row[6]]
+        results = [row for row in results if row[5]]
 
     reverse = (order_asc == "DESC")
     if order_criteria == "due_date":
         results.sort(key=lambda x: dateutil.parser.parse(x[3]) if x[3] else dateutil.parser.parse("1900-01-01"),
                      reverse=reverse)
     else:
-        results.sort(key=lambda x: float(x[4]),
+        results.sort(key=lambda x: float(x[6]),
                      reverse=reverse)
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(["Award Name", "Organization", "Due Date", "Brief Description", "Link", "isGrant"])
     for row in rows:
-        writer.writerow([row[0], row[1], row[3], row[2], row[5], row[6]])
+        writer.writerow([row[0], row[1], row[3], row[2], row[4], row[5]])
     csv_data = buffer.getvalue()
     filename = display if display else query
 
@@ -202,13 +223,4 @@ def export_csv():
     response.headers["Content-Disposition"] = f"attachment; filename=search_{filename}.csv"
     response.headers["Content-Type"] = "text/csv"
     return response
-
-
-@main.route('/search/page/<int:page>')
-@login_required
-def search_page_router(page):
-    order_criteria = request.args.get('sort_criteria', 'similarity')
-    order_asc = request.args.get('ascend', "DESC")
-    show_trials = request.args.get('show_trials', 'true').lower() in ('1', 'true')
-    show_grants = request.args.get('show_grants', 'true').lower() in ('1', 'true')
-    return search_page(page, order_criteria, order_asc, show_trials, show_grants)
+    

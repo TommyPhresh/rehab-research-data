@@ -32,11 +32,11 @@
         <div class="flex items-center gap-4">
           <span class="text-sm font-semibold text-gray-600 uppercase tracking-wider">Show:</span>
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="toggleGrants" class="w-4 h-4 text-blue-600" {% if show_grants %}checked{% endif %} onchange="applyFilters()">
+            <input type="checkbox" id="toggleGrants" class="w-4 h-4 text-blue-600" {% if 'page' not in request.path or show_grants|string|lower == 'true' or show_grants is none %}checked{% endif %} onchange="applyFilters()">
             <span class="text-sm">Grants</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="toggleTrials" class="w-4 h-4 text-blue-600" {% if show_trials %}checked{% endif %} onchange="applyFilters()">
+            <input type="checkbox" id="toggleTrials" class="w-4 h-4 text-blue-600" {% if 'page' not in request.path or show_trials|string|lower == 'true' or show_trials is none %}checked{% endif %} onchange="applyFilters()">
             <span class="text-sm">Trials</span>
           </label>
         </div>
@@ -46,12 +46,15 @@
         <div class="flex items-center gap-4">
           <span class="text-sm font-semibold text-gray-600 uppercase tracking-wider">Sort By:</span>
           <select id="sortCriteria" class="bg-gray-50 border border-gray-300 text-sm rounded-lg p-1.5" onchange="applyFilters()">
-            <option value="similarity" {% if sort_criteria == 'similarity' %}selected{% endif %}>Relevance</option>
+            <option value="similarity" {% if sort_criteria == 'similarity' or sort_criteria is none or sort_criteria == '' %}selected{% endif %}>Relevance</option>
             <option value="due_date" {% if sort_criteria == 'due_date' %}selected{% endif %}>Due Date</option>
           </select>
           <button onclick="toggleDirection()" class="text-gray-500 hover:text-blue-600">
-            <i id="sortIcon" class="fas fa-sort-amount-down"></i>
+		  <i id="sortIcon" class="fas {% if ascend == 'ASC'%} fa-sort-amount-up {% else %} fa-sort-amount-down{% endif %}"></i>
           </button>
+	  <span class='text-[10px] text-gray-400 font-medium uppercase mt-1'>
+	    {{ 'Relevance' if sort_criteria == 'similarity' else 'Due Date' }} | {{ 'Descending' if ascend == 'DESC' else 'Ascending' }}
+	  </span>
         </div>
       </div>
 
@@ -110,30 +113,39 @@
     <script>
       const query = "{{ query }}";
       const display = "{{ display }}";
+      const params = new URLSearchParams(window.location.search);
       let currentPage = 1;
-      let sortAsc = false;
-
+      let sortAsc = ((params.get('ascend') || "{{ ascend }}") !== "DESC") ? "ASC" : "DESC";
+      window.addEventListener('DOMContentLoaded', () => {
+	const criteria = params.get('sort_criteria') || "{{ sort_criteria}} ";
+	if (criteria) document.getElementById('sortCriteria').value = criteria;
+      });
+      
       function applyFilters() {
         const showGrants = document.getElementById('toggleGrants').checked;
         const showTrials = document.getElementById('toggleTrials').checked;
         const criteria = document.getElementById('sortCriteria').value;
-        const direction = sortAsc ? 'ASC' : 'DESC';
-        const url = `/search/page/1?sort_criteria=${criteria}&ascend=${direction}&show_trials=${showTrials}&show_grants=${showGrants}`;
+	console.log(showGrants, showTrials, criteria, sortAsc);
+	const url = `/search/page/1?query=${encodeURIComponent(query)}&display=${encodeURIComponent(display)}&sort_criteria=${criteria}&ascend=${sortAsc}&show_trials=${showTrials}&show_grants=${showGrants}`;
         window.location.href = url;
       }
 
       function toggleDirection() {
-        sortAsc = !sortAsc;
-        document.getElementById('sortIcon').className = sortAsc ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down';
-        applyFilters();
+	sortAsc = (sortAsc === "ASC") ? "DESC" : "ASC";
+	  document.addEventListener('DOMContentLoaded', () => {
+	    const icon = document.getElementById('sortIcon');
+	    if (icon) {
+	      icon.className = (sortAsc === "ASC") ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down';
+	    }
+	});
+        applyFilters(1);
       }
 
       function exportResults() {
         const showGrants = document.getElementById('toggleGrants').checked;
         const showTrials = document.getElementById('toggleTrials').checked;
         const criteria = document.getElementById('sortCriteria').value;
-        const direction = sortAsc ? 'ASC' : 'DESC';
-        window.location.href = `/search/export?query=${query}&display=${display}&sort_criteria=${criteria}&ascend=${direction}&show_trials=${showTrials}&show_grants=${showGrants}`;
+        window.location.href = `/search/export?query=${query}&display=${display}&sort_criteria=${criteria}&ascend=${sortAsc}&show_trials=${showTrials}&show_grants=${showGrants}`;
       }
 
       function changePage(delta) {
@@ -141,4 +153,4 @@
       }
     </script>
   </body>
-</html>
+</html> 
