@@ -1,8 +1,9 @@
+import io, csv, dateutil.parser
 from flask import Blueprint, render_template, request, current_app, redirect, url_for, flash, make_response
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
 from flask_mail import Message
-from extensions import mail
+from extensions import mail, cache
 
 from user import User, get_user_from_db
 
@@ -87,6 +88,7 @@ def search():
         display=specialty if specialty else query,
         total_pages = (len(results) // 25) + 1 if results else 0
         )
+       
 '''
 user feature request and bug reports
 '''
@@ -108,7 +110,6 @@ def contact():
                     f"Priority: {priority}\n\n"
                     f"Message:\n{msg_body}")
         try:
-            from app import mail
             mail.send(msg)
             flash("Thank you for your feedback! Your message has been received.", 'success')
             return redirect(url_for('main.homepage'))

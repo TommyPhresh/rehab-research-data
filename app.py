@@ -3,7 +3,7 @@ from flask import Flask
 
 from db import SearchEngine
 from user import register_user_loader
-from extensions import login_manager
+from extensions import login_manager, cache, mail
 
 def create_app():
     app = Flask(__name__)
@@ -22,6 +22,8 @@ def create_app():
         print('Error in search engine load:', e)
 
     login_manager.init_app(app)
+    cache.init_app(app)
+    mail.init_app(app)
     register_user_loader()
     from routes import main as main_blueprint
     app.register_blueprint(main_blueprint)
