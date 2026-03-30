@@ -50,11 +50,11 @@
             <option value="due_date" {% if sort_criteria == 'due_date' %}selected{% endif %}>Due Date</option>
           </select>
           <button onclick="toggleDirection()" class="text-gray-500 hover:text-blue-600">
-		  <i id="sortIcon" class="fas {% if ascend == 'ASC'%} fa-sort-amount-up {% else %} fa-sort-amount-down{% endif %}"></i>
+                  <i id="sortIcon" class="fas {% if ascend == 'ASC'%} fa-sort-amount-up {% else %} fa-sort-amount-down{% endif %}"></i>
           </button>
-	  <span class='text-[10px] text-gray-400 font-medium uppercase mt-1'>
-	    {{ 'Relevance' if sort_criteria == 'similarity' else 'Due Date' }} | {{ 'Descending' if ascend == 'DESC' else 'Ascending' }}
-	  </span>
+          <span class='text-[10px] text-gray-400 font-medium uppercase mt-1'>
+            {{ 'Relevance' if sort_criteria == 'similarity' else 'Due Date' }} | {{ 'Descending' if ascend == 'DESC' else 'Ascending' }}
+          </span>
         </div>
       </div>
 
@@ -84,7 +84,7 @@
                 </span>
               </td>
               <td class="p-4">
-                <button onclick="toggleDescription('desc-{{ loop.index }}')" class="text-blue-600 hover:text-blue-800 text-sm font-semibold">
+                <button onclick="toggleDescription('desc-{{ loop.index }}'); event.stopPropagation();" class="text-blue-600 hover:text-blue-800 text-sm font-semibold">
                   Details
                 </button>
                 <a href="{{ row[4] }}" target="_blank" class="ml-3 text-gray-400 hover:text-blue-600"><i class="fas fa-external-link-alt"></i></a>
@@ -117,27 +117,34 @@
       let currentPage = 1;
       let sortAsc = ((params.get('ascend') || "{{ ascend }}") !== "DESC") ? "ASC" : "DESC";
       window.addEventListener('DOMContentLoaded', () => {
-	const criteria = params.get('sort_criteria') || "{{ sort_criteria}} ";
-	if (criteria) document.getElementById('sortCriteria').value = criteria;
+        const criteria = params.get('sort_criteria') || "{{ sort_criteria}} ";
+        if (criteria) document.getElementById('sortCriteria').value = criteria;
       });
-      
+
       function applyFilters() {
         const showGrants = document.getElementById('toggleGrants').checked;
         const showTrials = document.getElementById('toggleTrials').checked;
         const criteria = document.getElementById('sortCriteria').value;
-	console.log(showGrants, showTrials, criteria, sortAsc);
-	const url = `/search/page/1?query=${encodeURIComponent(query)}&display=${encodeURIComponent(display)}&sort_criteria=${criteria}&ascend=${sortAsc}&show_trials=${showTrials}&show_grants=${showGrants}`;
+        console.log(showGrants, showTrials, criteria, sortAsc);
+        const url = `/search/page/1?query=${encodeURIComponent(query)}&display=${encodeURIComponent(display)}&sort_criteria=${criteria}&ascend=${sortAsc}&show_trials=${showTrials}&show_grants=${showGrants}`;
         window.location.href = url;
       }
 
+      function toggleDescription(id) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.toggle('hidden');
+        }
+      }
+
       function toggleDirection() {
-	sortAsc = (sortAsc === "ASC") ? "DESC" : "ASC";
-	  document.addEventListener('DOMContentLoaded', () => {
-	    const icon = document.getElementById('sortIcon');
-	    if (icon) {
-	      icon.className = (sortAsc === "ASC") ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down';
-	    }
-	});
+        sortAsc = (sortAsc === "ASC") ? "DESC" : "ASC";
+          document.addEventListener('DOMContentLoaded', () => {
+            const icon = document.getElementById('sortIcon');
+            if (icon) {
+              icon.className = (sortAsc === "ASC") ? 'fas fa-sort-amount-up' : 'fas fa-sort-amount-down';
+            }
+        });
         applyFilters(1);
       }
 
@@ -153,4 +160,4 @@
       }
     </script>
   </body>
-</html> 
+</html>
