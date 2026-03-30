@@ -152,7 +152,7 @@
         const showGrants = document.getElementById('toggleGrants').checked;
         const showTrials = document.getElementById('toggleTrials').checked;
         const criteria = document.getElementById('sortCriteria').value;
-        window.location.href = `/search/export?query=${query}&display=${display}&sort_criteria=${criteria}&ascend=${sortAsc}&show_trials=${showTrials}&show_grants=${showGrants}`;
+        window.location.href = `/search/export?sort_criteria=${criteria}&ascend=${sortAsc}&show_trials=${showTrials}&show_grants=${showGrants}`;
       }
 
       function changePage(delta) {

@@ -27,7 +27,7 @@ def homepage():
     {"name": "Limb Loss", "query": "Provision of amputation management including: prevention of contractures, limb edema management, skin complications, evaluation and monitoring of physical therapy and occupational therapy needs, assessment of need for an assistive device or durable medical equipment, on-site work with a prosthetist for customized prosthesis design and evaluation for proper fit and gait, montoring and treatment of related issues such as phantom pain and neuromas, help connecting with community resources"},
     {"name": "Electrodiagnostics", "query": "An electrodiagnostic study (EMG study) consists of nerve conduction studies and electromyography. Nerve conduction studies stimulate the nerves with small amounts of electricity to evaluate the electrical properties and function of nerves to help detect diseases or injury. Electromyography studies consist of the insertion of a needle through the skin into a muscle to examine electrical properties and function. Will help diagnose individual nerve or nerve root entrapments, generalized neuropathies, inflammatory demyelinating neuropathies, small fiber sensory neuropathies, myotonia in myotonic myopathies, and disorders of muscles."},
     {"name": "Ultrasound", "query": "Rehabilitative ultrasound imaging is a non-invasive tool that can be used to visualize muscles and more accurately assess the origin of musculoskeletal pain and dysfunction. It can successfully evaluate morphologic characteristics of muscles and tendons, muscle activation patterns, outcomes of rehabilitation, pathologic conditions, muscle or tendon stiffness, and biofeedback for muscle retraining."},
-    {"name": "Interventional Spine", "name": "Spine treatments: education (spine biomechanics), activity modification, orthotics/braces, topical treatments (ultrasound, electrical stimulation), spine-specific physical therapy, spinal manipulation and manual treatments, pain psychology, corticosteroid injections, radiofrequency ablation, vertebral body ablation, spinal cord stimulator implantation, discectomy (relieve pressure on spinal nerve), foraminotomy (treat spinal stenosis, disc herniations, facet arthritis), laminotomy and laminectomy, and spinal fusion (treat degenerative disc disease, spondylolisthesis, scoliosis, spinal tumors, and spinal trauma)."},
+    {"name": "Interventional Spine", "query": "Spine treatments: education (spine biomechanics), activity modification, orthotics/braces, topical treatments (ultrasound, electrical stimulation), spine-specific physical therapy, spinal manipulation and manual treatments, pain psychology, corticosteroid injections, radiofrequency ablation, vertebral body ablation, spinal cord stimulator implantation, discectomy (relieve pressure on spinal nerve), foraminotomy (treat spinal stenosis, disc herniations, facet arthritis), laminotomy and laminectomy, and spinal fusion (treat degenerative disc disease, spondylolisthesis, scoliosis, spinal tumors, and spinal trauma)."},
     {"name": "Spasticity", "query": "Spasticity is an abnormal increase in muscle tone due to a central nervous system disease. Symptoms include: abnormal increase in muscle tone (stiff, tight, painful), difficulty moving joints or relaxing muscles, overactive reflexes, muscle spasms or abnormal movements, limited or loss of range of motion. Treatments include physical or occupational therapy, bracing/orthotics, oral medication, botulinum toxin injections, adult intrathecal baclofen pump, and surgical interventions such as tendon lengthening."},
     {"name": "General Awards", "query": "These are general administrative or non-specific awards which provide funding for researchers to put where most needed. Examples may include: upgrading technology available to researchers, funding for increased support staff for researchers, and more. These are specifically to assist researchers in their projects, but are not tied down to any one project."}
 ]
@@ -187,8 +187,10 @@ def search_page_router(page):
 @main.route('/search/export')
 @login_required
 def export_csv():
-    user_query = request.args.get('query')
-    display = request.args.get('display')
+    user_query = cache.get('query')
+    if not user_query:
+        return "Search session expired. Please search again.", 400
+    display = cache.get('display')
     order_criteria = request.args.get('sort_criteria', 'similarity')
     order_asc = request.args.get('ascend', "DESC")
     show_trials = request.args.get('show_trials', 'true').lower() in ('1', 'true')
@@ -215,13 +217,13 @@ def export_csv():
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(["Award Name", "Organization", "Due Date", "Brief Description", "Link", "isGrant"])
-    for row in rows:
+    for row in results:
         writer.writerow([row[0], row[1], row[3], row[2], row[4], row[5]])
     csv_data = buffer.getvalue()
     filename = display if display else query
 
     response = make_response(csv_data)
-    response.headers["Content-Disposition"] = f"attachment; filename=search_{filename}.csv"
-    response.headers["Content-Type"] = "text/csv"
+    response.headers.set("Content-Disposition", 'attachment; "filename=rehab-research_results.csv"')
+    response.headers.set("Content-Type", "text/csv")
     return response
     
