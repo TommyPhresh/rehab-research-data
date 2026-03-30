@@ -168,6 +168,7 @@ def search_page(page, order_criteria, order_asc, show_trials, show_grants):
                            ascend=order_asc,
                            length=len(filtered_results),
                            results=paginated_results,
+                           current_page=page,
                            total_pages=total_pages)
 
 @main.route('/search/page/<int:page>')

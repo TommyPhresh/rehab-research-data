@@ -104,9 +104,9 @@
       </div>
 
       <div class="mt-8 flex justify-center items-center gap-4">
-        <button onclick="changePage(-1)" class="p-2 px-4 rounded bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50" id="prevBtn">Previous</button>
-        <span class="text-sm font-medium">Page <span id="currentPage">1</span> of {{ total_pages }}</span>
-        <button onclick="changePage(1)" class="p-2 px-4 rounded bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50" id="nextBtn">Next</button>
+        <button onclick="changePage(-1)" class="p-2 px-4 rounded bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50" {% if current_page <= 1 %}disabled{% endif %}id="prevBtn">Previous</button>
+        <span class="text-sm font-medium">Page <span id="currentPage">{{ current_page }}</span> of {{ total_pages }}</span>
+        <button onclick="changePage(1)" class="p-2 px-4 rounded bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50" {% if current_page >= total_pages %}disabled{% endif %}id="nextBtn">Next</button>
       </div>
     </main>
 
@@ -121,12 +121,12 @@
         if (criteria) document.getElementById('sortCriteria').value = criteria;
       });
 
-      function applyFilters() {
+      function applyFilters(page=1) {
         const showGrants = document.getElementById('toggleGrants').checked;
         const showTrials = document.getElementById('toggleTrials').checked;
         const criteria = document.getElementById('sortCriteria').value;
         console.log(showGrants, showTrials, criteria, sortAsc);
-        const url = `/search/page/1?query=${encodeURIComponent(query)}&display=${encodeURIComponent(display)}&sort_criteria=${criteria}&ascend=${sortAsc}&show_trials=${showTrials}&show_grants=${showGrants}`;
+              const url = `/search/page/${page}?query=${encodeURIComponent(query)}&display=${encodeURIComponent(display)}&sort_criteria=${criteria}&ascend=${sortAsc}&show_trials=${showTrials}&show_grants=${showGrants}`;
         window.location.href = url;
       }
 
@@ -156,7 +156,12 @@
       }
 
       function changePage(delta) {
-        const targetPage = parseInt(new URLSearchParams(window.location.search).get('page') || 1) + delta;
+        const currentPage = parseInt("{{ current_page if current_page else 1 }}");
+        const totalPages = parseInt("{{ total_pages if total_pages else 1 }}");
+        const targetPage = currentPage + delta;
+        if (targetPage >= 1 && targetPage <= totalPages) {
+          applyFilters(targetPage);
+        }
       }
     </script>
   </body>
