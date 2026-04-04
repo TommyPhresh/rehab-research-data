@@ -10,13 +10,15 @@ def init_users_db():
         CREATE TABLE IF NOT EXISTS users (
             username TEXT PRIMARY KEY,
             password_hash TEXT NOT NULL
+            is_admin INTEGER DEFAULT 0
         )
     """)
     seed_users = {
+        "demo": "demo_project",
         "pmr": "pmrresearch"
     }
     for name, password in seed_users.items():
-        hash_str = generate_password_hash(password,
+        hash_str = generate_password_hash(password, 
                                           method='pbkdf2:sha256',
                                           salt_length=16)
         try:

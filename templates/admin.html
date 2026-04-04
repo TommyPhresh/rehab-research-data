@@ -1,0 +1,65 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  </head>
+  
+  <body class="bg-slate-50 min-h-screen">
+    <nav class="bg-white border-b border-slate-200 px-6 py-4">
+      <div class="max-w-7xl mx-auto flex justify-between items-center">
+        <a href="{{ url_for('main.homepage') }}" class="font-bold text-slate-800 flex items-center gap-2">
+          <i class="fas fa-arrow-left text-xs text-slate-400"><i>
+          Back to Search
+        </a>
+        <span class="text-xs font-black text-amber-600 uppercase tracking-widest">System Administrator</span>
+      </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto py-12 px-6">
+      <div class="mb-10">
+        <h1 class="text-3xl font-black text-slate-900 tracking-tight">User Management</h1>
+        <p class="text-slate-500 mt-2">Manage acess for {{ users|length }} users.</p>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="mb-6 p-4 rounded-xl text-sm font-bold bg-white border border-slate-200 shadow-sm flex items-center gap-3 {% if category == 'success' %}text-emerald-600 {% else %}text-red-600 {% endif %}">
+              <i class="fas fa-info-circle"></i>
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+              <th class="p-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Username</th>
+              <th class="p-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for user in users %}
+            <tr class="hover:bg-slate-50 transition-colors">
+              <td class="p-6">
+                <span class="font-bold text-slate-700">{{ user[0] }}</span>
+              </td>
+              <td class="p-6 text-right">
+                <form action="{{ url_for('main.admin_reset', target_user=user[0]) }}" method="POST" class="inline">
+                  <button type="submit" onclick="return confirm('Reset password for {{ user[0] }} to random?')" class="text-xs font-bold bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-black transition shadow-md">
+                    Reset Password
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </main>
+    </body>
+</html>
