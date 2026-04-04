@@ -3,7 +3,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Search Engine V2</title>
-    <script src="http://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   </head>
 
@@ -11,7 +11,7 @@
     <nav class="bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-50">
       <div class="max-w-7x1 mx-auto flex justify-between items-center">
         <div class="flex items-center gap-2">
-          <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+          <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white" href="{{ url_for('main.homepage') }}">
           </div>
           <span class="font-bold text-slate-800 tracking-tight text-lg">Rehab-Research.com v2</span>
         </div>
@@ -23,6 +23,7 @@
           </div>
 
           <div class="h-8 w-px bg-slate-200 mx-2"></div>
+          <a href="{{ url_for('main.change_password') }}" class="px-3 py-2 text-xs font-bold text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition flex items-center gap-2">Change Password</a>
           <a href="{{ url_for('main.logout') }}" class="px-4 py-2 text-xs font-bold text-red-500 hover:bg-red-50 rounded-lg transition">
             Logout
           </a>
@@ -30,6 +31,18 @@
       </div>
     </nav>
 
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="max-w-3xl mx-auto mt-6 px-6">
+          {% for category, message in messages %}
+          <div class="flex items-center gap-3 p-4 rounded-xl shadow-sm border {% if category == 'error' %} bg-red-50 border-red-100 text-red-700 {% else %} bg-emerald-50 border-emerald-100 text-emerald-800 {% endif %}">
+            <i class="fas {% if category == 'error' %}fa-exclamation-triangle{% else %}fa-check-circle{% endif %}"></i>
+            <p class="text-sm font-bold">{{ message }}</p>
+          </div>
+          {% endfor %}
+        <div>
+      {% endif %}
+    {% endwith %}
     <main class="max-w-6x1 mx-auto pt-12 pb-24 px-6">
       <div class="max-w-3x1 mx-auto text-center mb-16">
         <h1 class="text-4x1 font-black text-slate-900 mb-4 tracking-tight">Search Funding Opportunities</h1>

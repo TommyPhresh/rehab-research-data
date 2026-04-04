@@ -5,6 +5,7 @@ from werkzeug.security import check_password_hash
 from flask_mail import Message
 from extensions import mail, cache
 
+from user_mgmt import update_user_password
 from user import User, get_user_from_db
 
 main = Blueprint('main', __name__)
@@ -59,6 +60,33 @@ def login():
         else:
             flash("Invalid username or password. Please try again.", "error")
     return render_template('login.html')
+
+'''
+basic change PW with complexity check
+'''
+@main.route('/settings/password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    MIN_PW_LENGTH = 8
+    if request.method == "POST":
+        current_pw = request.form.get('current_password')
+        new_pw = request.form.get('new_password')
+        confirm_pw = request.form.get('confirm_password')
+        user_prof = get_user_from_db(current_user.id)
+        if not check_password_hash(user_prof[1], current_pw):
+            flash("Current password incorrect", 'error')
+            return render_template('change_password.html')
+        elif new_pw != confirm_pw:
+            flash("New passwords do not match", category='error')
+            return render_template('change_password.html')
+        elif len(new_pw) < MIN_PW_LENGTH:
+            flash(f"Password must be at least {MIN_PW_LENGTH} characters", category='error')
+            return render_template('change_password.html')
+        else:
+            update_user_password(current_user.id, new_pw)
+            flash("Password updated successfully", category='success')
+            return redirect(url_for('main.homepage'))
+    return render_template('change_password.html')
 
 @main.route('/logout')
 @login_required
@@ -226,4 +254,3 @@ def export_csv():
     response.headers.set("Content-Disposition", 'attachment; "filename=rehab-research_results.csv"')
     response.headers.set("Content-Type", "text/csv")
     return response
-    

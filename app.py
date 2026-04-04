@@ -8,6 +8,11 @@ from extensions import login_manager, cache, mail
 def create_app():
     app = Flask(__name__)
     app.config.from_object('config.Config')
+    app.config.update(
+        # SESSION_COOKIE_SECURE=True, # only in prod
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE='Lax',
+    )
     app.secret_key = 'MXt9mp8qaCFg9p8j1eiGI21A$'
     DB_PATH = 'data/rehab-research-v2.db'
     INDEX_PATH = 'index/embeddings.index'
@@ -31,4 +36,4 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(debug=True)
+    app.run(context='adhoc', debug=True, port=5000)
