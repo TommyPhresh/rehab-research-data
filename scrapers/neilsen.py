@@ -3,7 +3,7 @@ import hashlib, pandas as pd
 def generate_id(link):
     return hashlib.md5(link.strip().lower().encode()).hexdigest()[:12]
 
-def scrape_nielsen():
+def scrape_neilsen():
     raw_data = [
         {
             "name": "Spinal Cord Injury Research on the Translational Spectrum - Translational Spectrum Grants",

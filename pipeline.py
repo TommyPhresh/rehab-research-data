@@ -4,8 +4,13 @@ from sentence_transformers import SentenceTransformer
 import scrapers
 
 def get_new_data():
-    df_fpmr = scapers.fpmr.scrape_fpmr()
-    df_final = pd.concat([df_fpmr]).drop_duplicates(subset=['id'])
+    df_fpmr = scrapers.fpmr.scrape_fpmr()
+    df_neilsen = pd.DataFrame(scrapers.neilsen.scrape_neilsen())
+    df_pcori = pd.DataFrame(scrapers.pcori.scrape_pcori())
+    df_nidilrr = pd.DataFrame(scrapers.nidilrr.scrape_nidilrr())
+    df_final = pd.concat([df_fpmr, df_neilsen, df_pcori, df_nidilrr])
+    df_final = df_final.drop_duplicates(subset=['id']).reset_index(drop=True)
+    df_final = df_final.sort_values('id').reset_index(drop=True)
     df_final.to_parquet("data/new_data.parquet")
     return df_final
 
