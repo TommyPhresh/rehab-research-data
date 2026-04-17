@@ -1,3 +1,3 @@
 # versioning file for data pipeline
 
-__version__ = "2.2.0"
+__version__ = "2.9.7"
