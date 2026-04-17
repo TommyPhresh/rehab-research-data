@@ -9,9 +9,10 @@ def get_new_data():
     df_pcori = pd.DataFrame(scrapers.pcori.scrape_pcori())
     df_nidilrr = pd.DataFrame(scrapers.nidilrr.scrape_nidilrr())
     df_pva = scrapers.pva.scrape_pva()
+    df_acrm = pd.DataFrame(scrapers.acrm.scrape_acrm())
     
     df_final = pd.concat([df_fpmr, df_neilsen, df_pcori,
-                          df_nidilrr, df_pva])
+                          df_nidilrr, df_pva, df_acrm])
     df_final = df_final.drop_duplicates(subset=['id']).reset_index(drop=True)
     df_final = df_final.sort_values('id').reset_index(drop=True)
     df_final.to_parquet("data/new_data.parquet")
