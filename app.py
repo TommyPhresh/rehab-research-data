@@ -1,5 +1,6 @@
 import os
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from db import SearchEngine
 from user import register_user_loader
@@ -7,9 +8,10 @@ from extensions import login_manager, cache, mail
 
 def create_app():
     app = Flask(__name__)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     app.config.from_object('config.Config')
     app.config.update(
-        # SESSION_COOKIE_SECURE=True, # only in prod
+        SESSION_COOKIE_SECURE=True, # only in prod
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE='Lax',
     )
@@ -36,4 +38,5 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(context='adhoc', debug=True, port=5000)
+    app.run(debug=True, port=5000)
+    # app.run(host='0.0.0.0', port=8501, debug=False)
