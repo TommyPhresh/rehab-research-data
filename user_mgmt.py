@@ -18,7 +18,7 @@ def init_users_db():
         "pmr": "pmrresearch"
     }
     for name, password in seed_users.items():
-        hash_str = generate_password_hash(password, 
+        hash_str = generate_password_hash(password,
                                           method='pbkdf2:sha256',
                                           salt_length=16)
         try:
@@ -47,5 +47,20 @@ def update_user_password(username, new_password):
     conn.commit()
     conn.close()
 
+def add_user():
+    username = input("Username:")
+    password = input("Password:")
+    hash_str = generate_password(password,
+                                 method='pbkdf2:sha256',
+                                 salt_length=16)
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO users (username, password_hash) VALUES (?, ?)
+        """, (username, hash_str)
+    )
+    conn.commit()
+    conn.close()
+
 if __name__ == "__main__":
-    init_users_db()
+    add_user()
